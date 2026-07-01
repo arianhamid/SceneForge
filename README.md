@@ -1,242 +1,223 @@
-# SceneForge
+# 🎬 SceneForge
 
-> **Transform movies into structured knowledge.**
+> **The Open Framework for Narrative Intelligence**
 
-SceneForge is an open-source framework for understanding movies through multimodal AI.
-
-Instead of treating a movie as a collection of images or subtitles, SceneForge builds a structured knowledge representation of the story—including scenes, characters, locations, objects, events, relationships, timelines, and visual context.
-
-That knowledge can then power multiple applications such as:
-
-- 📖 Movie → Comic
-- 🎬 Movie → Storyboard
-- 📚 Movie → Novel
-- 🔍 Semantic Movie Search
-- 🧠 Movie Knowledge Graph
-- 📊 Dataset Generation
-- 🤖 AI Agents for Film Understanding
-
-SceneForge is **knowledge-first**.
-
-The comic is not the goal.
-
-It is one possible application.
+> **Movies are not just videos. They are worlds waiting to be understood.**
 
 ---
 
-# Philosophy
+## Vision
 
-Every movie contains knowledge.
+SceneForge is an open-source framework for extracting, organizing, reasoning about, and reusing knowledge from movies and videos.
 
-Characters.
+Unlike traditional video AI pipelines that stop after generating captions or JSON, SceneForge builds a structured understanding of visual stories that can power many different applications.
 
-Places.
+A movie is analyzed once.
 
-Objects.
-
-Relationships.
-
-Emotions.
-
-Actions.
-
-Timeline.
-
-SceneForge extracts that knowledge once and allows multiple downstream applications to reuse it.
-
-```
-Movie
-
-↓
-
-Knowledge Extraction
-
-↓
-
-Knowledge Representation
-
-↓
-
-Knowledge Refinement
-
-↓
-
-Applications
-```
+Its understanding becomes reusable forever.
 
 ---
 
-# Why SceneForge?
+## Why SceneForge?
 
-Most AI pipelines look like this:
-
-```
-Movie
-    ↓
-Prompt
-    ↓
-Image
-```
-
-SceneForge instead looks like:
+Today's AI video pipelines are tightly coupled to individual models.
 
 ```
 Movie
-    ↓
-Understanding
-    ↓
+   ↓
+Model
+   ↓
+Application
+```
+
+Changing the model often requires rewriting the application.
+
+SceneForge introduces a new architecture.
+
+```
+Movie
+   ↓
+Artifacts
+   ↓
 Knowledge
-    ↓
-Reasoning
-    ↓
+   ↓
+Intelligence
+   ↓
 Applications
 ```
 
-Knowledge is the foundation.
+Applications never depend on AI models.
 
-Everything else is derived.
+Applications depend on knowledge.
 
 ---
 
-# Core Principles
+## Goals
 
-- Knowledge First
-- Local First
-- Plugin Architecture
-- Explainable AI
-- Typed Data Models
-- Immutable Artifacts
-- Incremental Pipelines
-- Resumable Processing
-- Benchmark Driven
+- Understand movies instead of merely describing frames.
+- Build reusable structured knowledge.
+- Remain model-agnostic.
+- Support local and cloud AI providers.
+- Encourage reproducible research.
+- Serve as the foundation for many applications.
+
+---
+
+## Example Applications
+
+- Comic generation
+- Storyboard generation
+- Novel generation
+- Movie search
+- Character tracking
+- Scene understanding
+- Dataset generation
+- RAG pipelines
+- Educational tools
+- Video analytics
+
+---
+
+## Core Concepts
+
+### Artifacts
+
+Immutable outputs produced directly from media.
+
+Examples:
+
+- Frames
+- Audio
+- Transcript
+- OCR
+- Scene cuts
+- Embeddings
+
+---
+
+### Knowledge
+
+Structured facts extracted from artifacts.
+
+Examples:
+
+- Characters
+- Locations
+- Objects
+- Dialogue
+- Events
+- Relationships
+
+---
+
+### Intelligence
+
+Reasoning performed on knowledge.
+
+Examples:
+
+- Character arcs
+- Story arcs
+- Themes
+- Motivations
+- Emotional progression
+- Narrative structure
+
+---
+
+## Framework Architecture
+
+```
+                 Applications
+                       │
+               Intelligence Engine
+                       │
+               Knowledge Graph
+                       │
+              Extraction Pipelines
+                       │
+                  Artifacts
+                       │
+                    Movie
+```
+
+---
+
+## Design Principles
+
+- Architecture before implementation.
+- Knowledge before generation.
+- Capabilities before models.
+- Immutable artifacts.
+- Plugin-first architecture.
+- Framework over workflows.
+- Documentation as a first-class feature.
+
+---
+
+## Repository Structure
+
+```
+sceneforge/
+docs/
+specs/
+plugins/
+applications/
+tests/
+benchmarks/
+examples/
+.ai/
+```
+
+---
+
+## Current Status
+
+🚧 Genesis
+
+The framework architecture is currently being implemented.
+
+MovieToComic serves as the research prototype that validates many of SceneForge's ideas before they become generic framework capabilities.
+
+---
+
+## Documentation
+
+See:
+
+- docs/
+- specs/
+- .ai/
+
+---
+
+## Contributing
+
+We welcome contributors interested in:
+
+- Computer Vision
+- Large Language Models
+- Video Understanding
+- Knowledge Graphs
+- Software Architecture
 - Open Source
 
 ---
 
-# Planned Applications
+## Philosophy
 
-## Movie → Comic
+SceneForge is not built around today's models.
 
-Automatically generate high-quality comic books.
-
-## Movie → Storyboard
-
-Generate cinematic storyboards.
-
-## Movie → Novel
-
-Create novel-style adaptations.
-
-## Semantic Search
-
-Search movies using natural language.
-
-Example:
-
-> "Find every scene where Alice speaks to John inside the hospital."
-
-## Character Knowledge
-
-Generate complete character profiles.
-
-## Timeline Reconstruction
-
-Understand story chronology.
-
-## Dataset Builder
-
-Generate structured datasets for AI research.
+It is built around tomorrow's understanding.
 
 ---
 
-# Architecture
+## License
 
-```
-                 Applications
-
-        MovieToComic
-        Storyboard
-        Search
-        Dataset Builder
-        Novel Generator
-
-                ▲
-
-          Knowledge Core
-
-        Movie Memory
-        Character Graph
-        Location Graph
-        Timeline
-        Events
-        Relationships
-
-                ▲
-
-      Knowledge Extraction
-
-        Audio
-        Transcript
-        Vision
-        OCR
-        Motion
-        Faces
-        Objects
-```
+Apache-2.0 (planned)
 
 ---
 
-# Status
+## Project Motto
 
-🚧 Early Development
-
-SceneForge is currently in active architectural development.
-
-The framework is being designed before implementation to ensure long-term scalability.
-
----
-
-# Roadmap
-
-- [ ] Framework Core
-- [ ] Artifact System
-- [ ] Plugin SDK
-- [ ] Movie Domain
-- [ ] Scene Analysis
-- [ ] Knowledge Graph
-- [ ] Movie Memory
-- [ ] Movie → Comic Application
-- [ ] GUI
-- [ ] REST API
-
----
-
-# Contributing
-
-Contributions are welcome.
-
-Please read:
-
-- CONTRIBUTING.md
-- docs/
-- .ai/START_HERE.md
-
-before opening pull requests.
-
----
-
-# Project Leadership
-
-Founder & Lead Developer
-
-**Arian**
-
-Framework Architecture
-
-Designed collaboratively through iterative software architecture and engineering sessions with **OpenAI ChatGPT**, serving as the project's Chief Architecture collaborator.
-
----
-
-# License
-
-MIT License
+> **Movies are not just videos. They are worlds waiting to be understood.**

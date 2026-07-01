@@ -51,3 +51,23 @@ Its understanding should power unlimited downstream applications without repeati
 Movies are not just videos.
 
 They are worlds waiting to be understood.
+
+---
+
+# SceneForge
+
+## Repository
+
+https://github.com/arianhamid/SceneForge
+
+## Founder
+
+Arian Hamid
+
+## Vision
+
+SceneForge is an open-source framework for understanding visual stories.
+
+Movies are not just videos.
+
+They are worlds waiting to be understood.

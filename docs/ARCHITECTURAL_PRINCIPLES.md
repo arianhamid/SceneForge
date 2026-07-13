@@ -1,3 +1,9 @@
+## Prefer boring over clever.
+
+If two designs solve the same problem, prefer the one that is
+more readable, more predictable, and easier for contributors
+to understand.
+
 Core abstractions should be understandable in isolation.
 
 If a new contributor cannot understand a core class without

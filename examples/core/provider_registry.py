@@ -1,3 +1,5 @@
+from sceneforge.core.registry import Registry
+
 registry = Registry()
 
 registry.register(WhisperProvider())

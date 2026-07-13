@@ -13,7 +13,7 @@ from sceneforge.core.capability import Capability
 from sceneforge.core.provider import Provider
 
 
-class ProviderRegistry:
+class Registry:
     """
     Registry of available providers.
 
@@ -28,9 +28,7 @@ class ProviderRegistry:
         """Register a provider."""
 
         if provider.name in self._providers:
-            raise ValueError(
-                f"Provider '{provider.name}' already registered."
-            )
+            raise ValueError(f"Provider '{provider.name}' already registered.")
 
         self._providers[provider.name] = provider
 

@@ -23,3 +23,10 @@ class ProviderNotFoundError(SceneForgeError):
     def __init__(self, name: str) -> None:
         super().__init__(f"Provider '{name}' not found.")
         self.name = name
+
+
+class ProcessingCancelledError(SceneForgeError):
+    """Pipeline execution was cancelled."""
+
+    def __init__(self) -> None:
+        super().__init__("Processing was cancelled.")

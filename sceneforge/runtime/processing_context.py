@@ -13,20 +13,31 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from sceneforge.core.exceptions import ProcessingCancelledError
+
 
 @dataclass(slots=True)
 class ProcessingContext:
     """
     Runtime information shared between providers.
 
-    This object intentionally contains no business logic.
+    Providers can call ensure_running() to check if execution
+    should continue, or raise if cancelled.
     """
 
     request_id: str | None = None
 
     metadata: dict[str, Any] = field(default_factory=dict)
 
-    cancelled: bool = False
+    _cancelled: bool = field(default=False, init=False, repr=False)
+
+    @property
+    def cancelled(self) -> bool:
+        return self._cancelled
 
     def cancel(self) -> None:
-        self.cancelled = True
+        self._cancelled = True
+
+    def ensure_running(self) -> None:
+        if self._cancelled:
+            raise ProcessingCancelledError()

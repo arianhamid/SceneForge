@@ -7,8 +7,6 @@ by name or capability.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 from sceneforge.core.capability import Capability
 from sceneforge.core.exceptions import (
     DuplicateProviderError,

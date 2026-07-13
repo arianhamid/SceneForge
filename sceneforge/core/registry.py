@@ -10,6 +10,10 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from sceneforge.core.capability import Capability
+from sceneforge.core.exceptions import (
+    DuplicateProviderError,
+    ProviderNotFoundError,
+)
 from sceneforge.core.provider import Provider
 
 
@@ -28,17 +32,23 @@ class Registry:
         """Register a provider."""
 
         if provider.name in self._providers:
-            raise ValueError(f"Provider '{provider.name}' already registered.")
+            raise DuplicateProviderError(provider.name)
 
         self._providers[provider.name] = provider
 
     def unregister(self, name: str) -> None:
         """Remove a provider."""
 
+        if name not in self._providers:
+            raise ProviderNotFoundError(name)
+
         self._providers.pop(name)
 
     def get(self, name: str) -> Provider:
         """Return a provider by name."""
+
+        if name not in self._providers:
+            raise ProviderNotFoundError(name)
 
         return self._providers[name]
 

@@ -69,3 +69,14 @@ That may mean:
 - cleaner architecture
 
 Progress is measured by continuous improvement.
+
+---
+
+# Commit Purpose
+
+Every commit must satisfy one of two goals:
+
+1. Improve the architecture.
+2. Improve the user experience.
+
+If it does neither, it probably shouldn't exist.

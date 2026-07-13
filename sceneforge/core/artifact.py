@@ -10,9 +10,25 @@ from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from enum import StrEnum
 from types import MappingProxyType
 from typing import Any, Mapping
 from uuid import UUID, uuid4
+
+
+class ArtifactKind(StrEnum):
+    """Vocabulary of artifact types. Prevents string typos."""
+
+    ARTIFACT = "artifact"
+    FRAME = "frame"
+    TRANSCRIPT = "transcript"
+    SCENE_CUT = "scene_cut"
+    CAPTION = "caption"
+    OCR = "ocr"
+    EMBEDDING = "embedding"
+    FACE_DETECTION = "face_detection"
+    OBJECT_DETECTION = "object_detection"
+    AUDIO_SEGMENT = "audio_segment"
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,7 +43,7 @@ class Artifact(ABC):
 
     id: UUID = field(default_factory=uuid4)
 
-    type: str = "artifact"
+    type: ArtifactKind = ArtifactKind.ARTIFACT
 
     provider: str = "unknown"
 

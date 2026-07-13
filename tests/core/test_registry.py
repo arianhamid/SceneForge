@@ -1,7 +1,7 @@
 from sceneforge.core.artifact import Artifact
 from sceneforge.core.capability import Capability
 from sceneforge.core.provider import Provider
-from sceneforge.core.registry import ProviderRegistry
+from sceneforge.core.registry import Registry
 
 
 class DummyArtifact(Artifact):
@@ -28,7 +28,7 @@ class DummyProvider(Provider):
 
 def test_register_provider():
 
-    registry = ProviderRegistry()
+    registry = Registry()
 
     provider = DummyProvider()
 
@@ -39,7 +39,7 @@ def test_register_provider():
 
 def test_get_provider():
 
-    registry = ProviderRegistry()
+    registry = Registry()
 
     provider = DummyProvider()
 
@@ -50,7 +50,7 @@ def test_get_provider():
 
 def test_find_by_capability():
 
-    registry = ProviderRegistry()
+    registry = Registry()
 
     provider = DummyProvider()
 

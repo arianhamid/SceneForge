@@ -1,4 +1,4 @@
-from sceneforge.core.artifact import Artifact
+from sceneforge.core.artifact import Artifact, ArtifactKind
 
 
 class DummyArtifact(Artifact):
@@ -8,7 +8,7 @@ class DummyArtifact(Artifact):
 def test_artifact_defaults():
     artifact = DummyArtifact()
 
-    assert artifact.type == "artifact"
+    assert artifact.type == ArtifactKind.ARTIFACT
     assert artifact.provider == "unknown"
     assert artifact.parents == ()
 
@@ -17,7 +17,7 @@ def test_artifact_is_immutable():
     artifact = DummyArtifact(provider="test")
 
     try:
-        artifact.type = "modified"  # type: ignore[misc]
+        artifact.type = ArtifactKind.FRAME  # type: ignore[misc]
         assert False, "Artifact should be immutable"
     except AttributeError:
         pass

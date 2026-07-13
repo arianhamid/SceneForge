@@ -7,7 +7,7 @@ Base class for all providers that interact with external AI systems.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from collections.abc import Iterable
 
 from sceneforge.core.artifact import Artifact
 from sceneforge.core.capability import Capability
@@ -38,5 +38,8 @@ class Provider(ABC):
         """Return the capabilities this provider implements."""
 
     @abstractmethod
-    def process(self, artifacts: list[Artifact]) -> list[Artifact]:
+    def process(
+        self,
+        artifacts: Iterable[Artifact],
+    ) -> Iterable[Artifact]:
         """Process artifacts and return new artifacts."""

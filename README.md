@@ -158,36 +158,112 @@ Examples:
 ## Repository Structure
 
 ```
-sceneforge/
+sceneforge/          # Core Python package
+  core/              # Core abstractions (Artifact, Provider, Registry)
 docs/
-specs/
-plugins/
-applications/
-tests/
-benchmarks/
-examples/
-.ai/
+  architecture/      # Architectural decisions and layer definitions
+  philosophy/        # Project values and principles
+  specifications/    # Technical specifications
+tests/               # Test suite
+examples/            # Usage examples
+.ai/                 # AI agent context and decisions
 ```
 
 ---
 
-## Current Status
+## Installation
 
-🚧 Genesis
+```bash
+git clone https://github.com/arianhamid/SceneForge.git
+cd SceneForge
+python -m venv .venv
+.venv\Scripts\activate  # Windows
+# source .venv/bin/activate  # macOS/Linux
+pip install -e ".[dev]"
+```
 
-The framework architecture is currently being implemented.
+---
 
-MovieToComic serves as the research prototype that validates many of SceneForge's ideas before they become generic framework capabilities.
+## Development
+
+### Environment Setup
+
+```bash
+# Create virtual environment
+python -m venv .venv
+
+# Activate it
+.venv\Scripts\activate  # Windows
+# source .venv/bin/activate  # macOS/Linux
+
+# Install dependencies
+pip install -e ".[dev]"
+```
+
+### Environment Variables
+
+Copy `.env` to `.env.local` and configure your API keys:
+
+```bash
+cp .env .env.local
+# Edit .env.local with your settings
+```
+
+### Running Tests
+
+```bash
+pytest tests/ -v
+```
+
+### Running Tests with Coverage
+
+```bash
+pytest tests/ --cov=sceneforge --cov-report=html
+```
+
+### Linting
+
+```bash
+ruff check sceneforge/
+ruff format sceneforge/
+```
+
+### Type Checking
+
+```bash
+mypy sceneforge/
+```
+
+---
+
+## Project Status
+
+🚧 **Genesis Phase**
+
+The framework architecture is being implemented. Core abstractions are in place:
+
+- [x] Artifact base class (immutable, serializable)
+- [x] Provider abstraction
+- [x] Capability system
+- [x] Provider Registry
+- [ ] Knowledge Graph
+- [ ] Intelligence Engine
+- [ ] Pipeline system
+- [ ] Plugin ecosystem
 
 ---
 
 ## Documentation
 
-See:
-
-- docs/
-- specs/
-- .ai/
+- [Architecture Overview](docs/architecture/OVERVIEW.md)
+- [Domain Model](docs/architecture/DOMAIN_MODEL.md)
+- [Layered Architecture](docs/architecture/LAYERS.md)
+- [Core Principles](docs/philosophy/CORE_PRINCIPLES.md)
+- [Manifesto](docs/philosophy/MANIFESTO.md)
+- [Engineering Philosophy](.ai/ENGINEERING_PHILOSOPHY.md)
+- [Artifact Specification](docs/specifications/ARTIFACT_SPEC.md)
+- [Provider Specification](docs/specifications/PROVIDER_SPEC.md)
+- [Registry Specification](docs/specifications/REGISTRY_SPEC.md)
 
 ---
 
@@ -202,6 +278,8 @@ We welcome contributors interested in:
 - Software Architecture
 - Open Source
 
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) and our [Code of Conduct](docs/philosophy/COMMUNITY_PRINCIPLES.md) before submitting a pull request.
+
 ---
 
 ## Philosophy
@@ -214,7 +292,7 @@ It is built around tomorrow's understanding.
 
 ## License
 
-Apache-2.0 (planned)
+Apache-2.0
 
 ---
 

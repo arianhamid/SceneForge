@@ -1,32 +1,39 @@
-"""
-SceneForge Pipeline interface.
-"""
-
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from collections.abc import Iterable
 
 from sceneforge.core.artifact import Artifact
 from sceneforge.core.provider import Provider
-from sceneforge.runtime.processing_context import ProcessingContext
+from sceneforge.runtime import ProcessingContext
 
 
-class Pipeline(ABC):
+class Pipeline:
     """
-    A Pipeline orchestrates Providers.
+    Sequential provider pipeline.
 
-    Pipelines do not perform work directly.
+    Executes providers in registration order.
     """
 
-    @property
-    @abstractmethod
-    def providers(self) -> tuple[Provider, ...]: ...
+    def __init__(
+        self,
+        providers: Iterable[Provider],
+    ) -> None:
 
-    @abstractmethod
+        self._providers = tuple(providers)
+
     def run(
         self,
         artifacts: Iterable[Artifact],
         *,
         context: ProcessingContext | None = None,
-    ) -> Iterable[Artifact]: ...
+    ) -> Iterable[Artifact]:
+
+        result = artifacts
+
+        for provider in self._providers:
+            result = provider.process(
+                result,
+                context=context,
+            )
+
+        return result

@@ -8,6 +8,8 @@ from sceneforge.core.artifact import Artifact, ArtifactKind
 from sceneforge.core.capability import Capability
 from sceneforge.core.exceptions import (
     DuplicateProviderError,
+    InvalidMetadataError,
+    InvalidNameError,
     ProcessingCancelledError,
     ProviderNotFoundError,
     SceneForgeError,
@@ -21,6 +23,8 @@ __all__ = [
     "ArtifactKind",
     "Capability",
     "DuplicateProviderError",
+    "InvalidMetadataError",
+    "InvalidNameError",
     "Pipeline",
     "ProcessingCancelledError",
     "Provider",

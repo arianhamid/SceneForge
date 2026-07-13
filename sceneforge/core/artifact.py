@@ -8,11 +8,12 @@ through the SceneForge framework.
 from __future__ import annotations
 
 from abc import ABC
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Any, Generic, Mapping, TypeVar
+from typing import Any, Generic, TypeVar
 from uuid import UUID, uuid4
 
 T = TypeVar("T")

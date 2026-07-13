@@ -24,7 +24,7 @@ class DummyProvider(Provider):
     def capabilities(self):
         return frozenset({Capability.CAPTION})
 
-    def process(self, artifacts):
+    def process(self, artifacts, *, context=None):
         return artifacts
 
 
@@ -118,3 +118,15 @@ def test_find_by_capability():
     providers = registry.by_capability(Capability.CAPTION)
 
     assert provider in providers
+
+
+def test_contains_method():
+    registry = Registry()
+    provider = DummyProvider()
+    
+    assert "dummy" not in registry
+    
+    registry.register(provider)
+    
+    assert "dummy" in registry
+    assert "nonexistent" not in registry

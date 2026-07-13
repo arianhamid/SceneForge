@@ -17,6 +17,11 @@ def test_identity_provider_version():
     assert provider.version == "1.0.0"
 
 
+def test_identity_provider_capabilities():
+    provider = IdentityProvider()
+    assert provider.capabilities == frozenset()
+
+
 def test_identity_provider_returns_unchanged():
     provider = IdentityProvider()
     artifact = Artifact(kind=ArtifactKind.FRAME, provider="test")

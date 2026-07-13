@@ -10,10 +10,14 @@ Returns artifacts unchanged. Useful for:
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 from sceneforge.core.artifact import Artifact
 from sceneforge.core.capability import Capability
 from sceneforge.core.provider import Provider
+
+if TYPE_CHECKING:
+    from sceneforge.runtime.processing_context import ProcessingContext
 
 
 class IdentityProvider(Provider):
@@ -38,8 +42,8 @@ class IdentityProvider(Provider):
 
     def process(
         self,
-        artifacts: Iterable[Artifact],
+        artifacts: Iterable[Artifact],  # type: ignore[type-arg]
         *,
-        context=None,
-    ) -> Iterable[Artifact]:
+        context: ProcessingContext | None = None,
+    ) -> Iterable[Artifact]:  # type: ignore[type-arg]
         return artifacts

@@ -21,7 +21,7 @@ class DummyProvider(Provider):
     def capabilities(self):
         return frozenset({Capability.CAPTION})
 
-    def process(self, artifacts):
+    def process(self, artifacts, *, context=None):
         return artifacts
 
 

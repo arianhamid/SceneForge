@@ -30,3 +30,20 @@ class ProcessingCancelledError(SceneForgeError):
 
     def __init__(self) -> None:
         super().__init__("Processing was cancelled.")
+
+
+class InvalidNameError(SceneForgeError):
+    """Raised when a provider name does not conform to naming rules."""
+
+    def __init__(self, name: str) -> None:
+        super().__init__(f"Invalid qualified name: {name!r}")
+        self.name = name
+
+
+class InvalidMetadataError(SceneForgeError):
+    """Raised when provider metadata contains invalid fields."""
+
+    def __init__(self, field: str, reason: str) -> None:
+        super().__init__(f"Invalid metadata field '{field}': {reason}")
+        self.field = field
+        self.reason = reason

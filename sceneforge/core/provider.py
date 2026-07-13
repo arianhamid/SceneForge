@@ -8,9 +8,13 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 from sceneforge.core.artifact import Artifact
 from sceneforge.core.capability import Capability
+
+if TYPE_CHECKING:
+    from sceneforge.runtime.processing_context import ProcessingContext
 
 
 class Provider(ABC):
@@ -40,6 +44,8 @@ class Provider(ABC):
     @abstractmethod
     def process(
         self,
-        artifacts: Iterable[Artifact],
-    ) -> Iterable[Artifact]:
+        artifacts: Iterable[Artifact],  # type: ignore[type-arg]
+        *,
+        context: ProcessingContext | None = None,
+    ) -> Iterable[Artifact]:  # type: ignore[type-arg]
         """Process artifacts and return new artifacts."""

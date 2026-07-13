@@ -23,10 +23,10 @@ class Pipeline:
 
     def run(
         self,
-        artifacts: Iterable[Artifact],
+        artifacts: Iterable[Artifact],  # type: ignore[type-arg]
         *,
         context: ProcessingContext | None = None,
-    ) -> Iterable[Artifact]:
+    ) -> Iterable[Artifact]:  # type: ignore[type-arg]
 
         result = artifacts
 

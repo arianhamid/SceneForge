@@ -27,3 +27,4 @@ class Capability(StrEnum):
     OBJECT_DETECTION = "object_detection"
     AUDIO_ANALYSIS = "audio_analysis"
     EMBEDDING = "embedding"
+    FRAME_EXTRACTION = "frame_extraction"

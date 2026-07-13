@@ -19,8 +19,7 @@ class Registry:
     """
     Registry of available providers.
 
-    The registry owns provider instances and exposes simple
-    discovery APIs.
+    All operations are O(1).
     """
 
     def __init__(self) -> None:
@@ -35,12 +34,12 @@ class Registry:
         self._providers[provider.name] = provider
 
     def unregister(self, name: str) -> None:
-        """Remove a provider."""
+        """Remove a provider by name."""
 
         if name not in self._providers:
             raise ProviderNotFoundError(name)
 
-        self._providers.pop(name)
+        del self._providers[name]
 
     def get(self, name: str) -> Provider:
         """Return a provider by name."""
@@ -49,6 +48,16 @@ class Registry:
             raise ProviderNotFoundError(name)
 
         return self._providers[name]
+
+    def contains(self, name: str) -> bool:
+        """Check if a provider is registered."""
+
+        return name in self._providers
+
+    def clear(self) -> None:
+        """Remove all providers."""
+
+        self._providers.clear()
 
     def providers(self) -> tuple[Provider, ...]:
         """Return all registered providers."""

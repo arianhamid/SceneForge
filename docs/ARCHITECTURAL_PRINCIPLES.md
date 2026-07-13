@@ -1,3 +1,8 @@
+Core abstractions should be understandable in isolation.
+
+If a new contributor cannot understand a core class without
+reading five other files, the abstraction is too complex.
+
 Everything is immutable.
 
 Everything is serializable.

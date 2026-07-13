@@ -1,0 +1,68 @@
+"""
+SceneForge Provider Registry.
+
+Keeps track of available providers and allows discovery
+by name or capability.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Iterable
+
+from sceneforge.core.capability import Capability
+from sceneforge.core.provider import Provider
+
+
+class ProviderRegistry:
+    """
+    Registry of available providers.
+
+    The registry owns provider instances and exposes simple
+    discovery APIs.
+    """
+
+    def __init__(self) -> None:
+        self._providers: dict[str, Provider] = {}
+
+    def register(self, provider: Provider) -> None:
+        """Register a provider."""
+
+        if provider.name in self._providers:
+            raise ValueError(
+                f"Provider '{provider.name}' already registered."
+            )
+
+        self._providers[provider.name] = provider
+
+    def unregister(self, name: str) -> None:
+        """Remove a provider."""
+
+        self._providers.pop(name)
+
+    def get(self, name: str) -> Provider:
+        """Return a provider by name."""
+
+        return self._providers[name]
+
+    def providers(self) -> tuple[Provider, ...]:
+        """Return all registered providers."""
+
+        return tuple(self._providers.values())
+
+    def by_capability(
+        self,
+        capability: Capability,
+    ) -> tuple[Provider, ...]:
+        """Return providers supporting a capability."""
+
+        return tuple(
+            provider
+            for provider in self._providers.values()
+            if capability in provider.capabilities
+        )
+
+    def __contains__(self, name: str) -> bool:
+        return name in self._providers
+
+    def __len__(self) -> int:
+        return len(self._providers)

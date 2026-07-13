@@ -1,21 +1,49 @@
-artifact = FrameArtifact(
-    timestamp=12.35,
-    provider="opencv",
-    path="frames/000124.jpg",
-)
+"""
+SceneForge Artifact
 
-artifact.id
+Defines the immutable base class for every observation flowing
+through the SceneForge framework.
+"""
 
-artifact.provider
+from __future__ import annotations
 
-artifact.timestamp
+from abc import ABC
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from types import MappingProxyType
+from typing import Any, Mapping
+from uuid import UUID, uuid4
 
-artifact.metadata
 
-artifact.to_json()
+@dataclass(frozen=True, slots=True)
+class Artifact(ABC):
+    """
+    Immutable base class for every SceneForge artifact.
 
-artifact.from_json()
+    Artifacts represent observations produced by providers.
+    They should never contain reasoning or application-specific
+    logic.
+    """
 
-artifact.hash()
+    id: UUID = field(default_factory=uuid4)
 
-artifact.validate()
+    type: str = "artifact"
+
+    provider: str = "unknown"
+
+    created_at: datetime = field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+
+    payload: Any = None
+
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    parents: tuple[UUID, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "metadata",
+            MappingProxyType(dict(self.metadata)),
+        )

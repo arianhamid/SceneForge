@@ -24,16 +24,15 @@ def test_identity_artifact_kind():
 
 
 def test_identity_artifact_is_immutable():
+    import pytest
+
     artifact = IdentityArtifact(
         media_id=UUID("12345678-1234-5678-1234-567812345678"),
         provider="identity",
     )
 
-    try:
+    with pytest.raises(AttributeError):
         artifact.provider = "changed"  # type: ignore[misc]
-        assert False, "IdentityArtifact should be immutable"
-    except AttributeError:
-        pass
 
 
 def test_identity_artifact_has_id():

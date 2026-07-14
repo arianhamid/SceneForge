@@ -10,7 +10,7 @@ Returns artifacts unchanged. Useful for:
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sceneforge.core.artifact import Artifact
 from sceneforge.core.capability import Capability
@@ -42,7 +42,7 @@ class IdentityProvider(Provider):
     def capabilities(self) -> frozenset[Capability]:
         return frozenset()
 
-    def run(self, media: Media) -> list[Artifact]:
+    def run(self, media: Media) -> list[Artifact[Any]]:
         """Process media and return artifacts."""
         return [
             IdentityArtifact(

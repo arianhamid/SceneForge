@@ -1,6 +1,6 @@
-from sceneforge.media.base import Media
 from sceneforge.core.artifact import Artifact
 from sceneforge.core.provider_protocol import Provider
+from sceneforge.media.base import Media
 
 
 def test_provider_is_protocol():
@@ -12,11 +12,10 @@ def test_provider_has_run_method():
 
 
 def test_provider_is_abstract():
-    try:
+    import pytest
+
+    with pytest.raises(TypeError):
         Provider()
-        assert False, "Provider should not be instantiable"
-    except TypeError:
-        pass
 
 
 def test_runtime_checkable():

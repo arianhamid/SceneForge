@@ -6,7 +6,7 @@ Protocol defining the contract for processing media into artifacts.
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from sceneforge.core.artifact import Artifact
 from sceneforge.media.base import Media
@@ -21,6 +21,6 @@ class Provider(Protocol):
     Implementations don't need to inherit from this protocol.
     """
 
-    def run(self, media: Media) -> list[Artifact]:
+    def run(self, media: Media) -> list[Artifact[Any]]:
         """Process media and return artifacts."""
         ...

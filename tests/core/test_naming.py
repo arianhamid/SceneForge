@@ -15,15 +15,15 @@ def test_valid_names():
 def test_invalid_names():
     with pytest.raises(InvalidNameError):
         validate_qualified_name("")
-    
+
     with pytest.raises(InvalidNameError):
         validate_qualified_name("invalid")
-    
+
     with pytest.raises(InvalidNameError):
         validate_qualified_name("Invalid.Name")
-    
+
     with pytest.raises(InvalidNameError):
         validate_qualified_name("invalid name")
-    
+
     with pytest.raises(InvalidNameError):
         validate_qualified_name("invalid/name")

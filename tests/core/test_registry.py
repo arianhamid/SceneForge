@@ -1,6 +1,5 @@
 import pytest
 
-from sceneforge.core.artifact import Artifact
 from sceneforge.core.capability import Capability
 from sceneforge.core.exceptions import (
     DuplicateProviderError,
@@ -123,10 +122,10 @@ def test_find_by_capability():
 def test_contains_method():
     registry = Registry()
     provider = DummyProvider()
-    
+
     assert "dummy" not in registry
-    
+
     registry.register(provider)
-    
+
     assert "dummy" in registry
     assert "nonexistent" not in registry

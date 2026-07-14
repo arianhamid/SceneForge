@@ -1,6 +1,4 @@
-from uuid import UUID
 
-import pytest
 
 from sceneforge.contrib.identity.provider import IdentityProvider
 from sceneforge.core.identity_artifact import IdentityArtifact

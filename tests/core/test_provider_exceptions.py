@@ -1,7 +1,7 @@
 from sceneforge.core.exceptions import (
+    InvalidMediaError,
     ProviderError,
     ProviderNotFoundError,
-    InvalidMediaError,
 )
 
 

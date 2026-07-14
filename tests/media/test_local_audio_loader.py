@@ -2,9 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from sceneforge.media.audio_loader import LocalAudioLoader
 from sceneforge.media.audio import AudioMedia
+from sceneforge.media.audio_loader import LocalAudioLoader
 from sceneforge.media.exceptions import (
+    InvalidMediaError,
     MediaNotFoundError,
     UnsupportedMediaError,
 )
@@ -46,6 +47,13 @@ def test_unsupported_extension_raises():
     loader = LocalAudioLoader(FIXTURES / "audio.txt")
 
     with pytest.raises(UnsupportedMediaError):
+        loader.load()
+
+
+def test_empty_file_raises_invalid_media():
+    loader = LocalAudioLoader(FIXTURES / "empty.wav")
+
+    with pytest.raises(InvalidMediaError):
         loader.load()
 
 

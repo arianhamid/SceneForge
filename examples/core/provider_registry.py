@@ -1,11 +1,18 @@
-from sceneforge.core.registry import Registry
+"""
+SceneForge Provider Registry Example
 
+Demonstrates registering and discovering providers.
+"""
+
+from sceneforge.core.registry import Registry
+from sceneforge.contrib.identity import IdentityProvider
+
+# Create registry
 registry = Registry()
 
-registry.register(WhisperProvider())
+# Register providers
+registry.register(IdentityProvider())
 
-registry.register(FFmpegProvider())
-
+# Discover providers
 for provider in registry.providers():
-
-    print(provider.metadata.name)
+    print(f"Provider: {provider.name}, Version: {provider.version}")

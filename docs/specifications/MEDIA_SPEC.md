@@ -149,8 +149,10 @@ Loaders raise framework-specific exceptions:
 
 Loaders extract inexpensive, stable metadata:
 - Identity: filename, extension
-- File system: size_bytes, modified_at
-- Basic format: width/height for images, codec/fps for video, etc.
+- File system: size_bytes, modified_at, source
+- Format-specific fields (width/height, codec/fps, sample_rate/channels): return placeholder values; actual extraction delegated to Providers
+
+Note: Loaders provide filesystem metadata and detect format (e.g., via magic bytes for images), but media-specific fields use placeholder values because extracting them requires decoding. Use a Provider to populate these fields.
 
 ### Design Principles
 

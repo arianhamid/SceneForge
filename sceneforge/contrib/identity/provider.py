@@ -14,7 +14,9 @@ from typing import TYPE_CHECKING
 
 from sceneforge.core.artifact import Artifact
 from sceneforge.core.capability import Capability
+from sceneforge.core.identity_artifact import IdentityArtifact
 from sceneforge.core.provider import Provider
+from sceneforge.media.base import Media
 
 if TYPE_CHECKING:
     from sceneforge.runtime.processing_context import ProcessingContext
@@ -39,6 +41,15 @@ class IdentityProvider(Provider):
     @property
     def capabilities(self) -> frozenset[Capability]:
         return frozenset()
+
+    def run(self, media: Media) -> list[Artifact]:
+        """Process media and return artifacts."""
+        return [
+            IdentityArtifact(
+                media_id=media.id,
+                provider=self.name,
+            )
+        ]
 
     def process(
         self,

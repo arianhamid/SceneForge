@@ -72,7 +72,7 @@ class LocalImageLoader:
         try:
             header = self._path.read_bytes()[:16]
         except OSError as exc:
-            raise InvalidMediaError(self._path, str(exc)) from exc
+            raise MediaIOError(self._path, exc) from exc
 
         fmt = _FORMAT_MAP.get(self._path.suffix.lower(), "UNKNOWN")
         for magic, magic_fmt in _MAGIC_BYTES.items():

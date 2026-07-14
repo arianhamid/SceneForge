@@ -31,7 +31,7 @@ class ImageMedia(Media):
 
     @property
     def aspect_ratio(self) -> float:
-        return self.width / self.height
+        return self.width / self.height if self.height else 0.0
 
     @property
     def pixel_count(self) -> int:

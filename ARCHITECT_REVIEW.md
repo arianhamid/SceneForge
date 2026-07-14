@@ -15,6 +15,7 @@
 5. **Expand test coverage**: Add tests for `Registry.__len__`, `Registry.__contains__`, and edge cases like registering providers with empty capabilities. Add a test for the full plugin lifecycle (register → use → unregister).
 6. **Keep `ArtifactKind` inside `artifact.py`**: Already satisfied. No action needed.
 7. **Implement FFmpeg frame extraction provider**: Create `sceneforge/contrib/ffmpeg.py` with a `FFmpegProvider` that implements `Capability.FRAME_EXTRACTION`. This will validate the architecture end-to-end.
+8. **Pipeline as orchestration boundary**: Use `Pipeline` as the single entry point for processing media through providers. It accepts `Media` objects and returns `Artifact` instances, providing a clean orchestration layer.
 
 ## Next implementation target
-Implement `FFmpegProvider` to extract frames from video files, proving the provider pattern works with a real-world use case.
+Phase 2 — Capability System. Implement a capability system to describe provider capabilities and enable provider discovery based on capabilities.

@@ -26,6 +26,20 @@ class Provider(Protocol):
 Any class with a `run()` method returning `list[Artifact]` participates.
 Implementations don't need to inherit from this protocol.
 
+## Pipeline as Orchestration Boundary
+
+The `Pipeline` class is the single entry point for processing media through providers. It accepts `Media` objects and returns `Artifact` instances, providing a clean orchestration layer.
+
+```python
+from sceneforge.core.pipeline import Pipeline
+from sceneforge.contrib.identity import IdentityProvider
+
+pipeline = Pipeline(provider=IdentityProvider())
+artifacts = pipeline.run(media)
+```
+
+Pipeline is designed as a single-provider orchestrator in Phase 1.5. Provider composition (chaining) will be added in Phase 5.
+
 ## IdentityProvider
 
 The simplest provider, useful for testing pipeline architecture.
@@ -52,12 +66,14 @@ class IdentityArtifact(Artifact[None]):
 ## Usage
 
 ```python
+from sceneforge.core.pipeline import Pipeline
 from sceneforge.contrib.identity import IdentityProvider
 from sceneforge.media import ImageMedia
 
 provider = IdentityProvider()
+pipeline = Pipeline(provider=provider)
 image = ImageMedia(name="photo.jpg", width=1920, height=1080, fmt="JPEG")
-artifacts = provider.run(image)
+artifacts = pipeline.run(image)
 ```
 
 ## Constraints

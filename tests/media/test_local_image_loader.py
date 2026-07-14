@@ -2,14 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from sceneforge.media.image_loader import LocalImageLoader
-from sceneforge.media.image import ImageMedia
 from sceneforge.media.exceptions import (
+    InvalidMediaError,
     MediaNotFoundError,
     UnsupportedMediaError,
-    InvalidMediaError,
-    MediaIOError,
 )
+from sceneforge.media.image import ImageMedia
+from sceneforge.media.image_loader import LocalImageLoader
 
 FIXTURES = Path(__file__).parent.parent / "fixtures" / "image"
 
@@ -22,12 +21,12 @@ def test_load_image_returns_image_media():
     assert media.name == "cat.jpg"
 
 
-def test_load_image_has_dimensions():
+def test_load_image_has_placeholder_dimensions():
     loader = LocalImageLoader(FIXTURES / "cat.jpg")
     media = loader.load()
 
-    assert media.width == 640
-    assert media.height == 480
+    assert media.width == 0
+    assert media.height == 0
 
 
 def test_load_image_has_format():

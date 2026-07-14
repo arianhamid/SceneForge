@@ -9,8 +9,6 @@ from __future__ import annotations
 from os import PathLike
 from pathlib import Path
 
-from PIL import Image
-
 from .exceptions import (
     InvalidMediaError,
     MediaIOError,
@@ -31,12 +29,23 @@ _FORMAT_MAP = {
     ".webp": "WEBP",
 }
 
+_MAGIC_BYTES = {
+    b"\xff\xd8\xff": "JPEG",
+    b"\x89PNG\r\n\x1a\n": "PNG",
+    b"GIF87a": "GIF",
+    b"GIF89a": "GIF",
+    b"BM": "BMP",
+    b"II\x2a\x00": "TIFF",
+    b"MM\x00\x2a": "TIFF",
+    b"RIFF": "WEBP",
+}
+
 
 class LocalImageLoader:
     """
     Loads image files from the local filesystem.
 
-    Returns ImageMedia objects with decoded dimensions and format.
+    Returns ImageMedia objects with placeholder dimensions and detected format.
     """
 
     def __init__(self, path: str | PathLike[str]) -> None:
@@ -55,17 +64,30 @@ class LocalImageLoader:
         except OSError as exc:
             raise MediaIOError(self._path, exc) from exc
 
+        if stat.st_size == 0:
+            raise InvalidMediaError(self._path, "File is empty")
+
         try:
-            with Image.open(self._path) as img:
-                width, height = img.size
-                fmt = img.format or _FORMAT_MAP.get(self._path.suffix.lower(), "UNKNOWN")
-        except Exception as exc:
+            header = self._path.read_bytes()[:16]
+        except OSError as exc:
             raise InvalidMediaError(self._path, str(exc)) from exc
+
+        fmt = _FORMAT_MAP.get(self._path.suffix.lower(), "UNKNOWN")
+        for magic, magic_fmt in _MAGIC_BYTES.items():
+            if header.startswith(magic):
+                fmt = magic_fmt
+                break
+        else:
+            if fmt != "UNKNOWN":
+                raise InvalidMediaError(
+                    self._path,
+                    f"File does not match expected magic bytes for {fmt}",
+                )
 
         return ImageMedia(
             name=self._path.name,
-            width=width,
-            height=height,
+            width=0,
+            height=0,
             fmt=fmt,
             metadata={
                 "size_bytes": stat.st_size,

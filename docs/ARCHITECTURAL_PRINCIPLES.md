@@ -1,3 +1,7 @@
+Media objects know NOTHING about providers.
+
+Providers know EVERYTHING about media objects.
+
 ## Prefer boring over clever.
 
 If two designs solve the same problem, prefer the one that is

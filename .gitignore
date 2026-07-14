@@ -46,3 +46,7 @@ Thumbs.db
 # Distribution
 *.tar.gz
 *.zip
+
+# Compose
+.mimocode/
+docs/compose/plans/

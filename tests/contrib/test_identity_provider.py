@@ -23,20 +23,23 @@ def test_identity_provider_capabilities():
     assert provider.capabilities == frozenset()
 
 
-def test_identity_provider_returns_unchanged():
+def test_identity_provider_returns_artifact():
     provider = IdentityProvider()
-    artifact = Artifact(kind=ArtifactKind.FRAME, provider="test")
+    media = ImageMedia(name="test.jpg", width=100, height=100, fmt="JPEG")
 
-    result = list(provider.process([artifact]))
+    result = provider.run(media)
 
     assert len(result) == 1
-    assert result[0] is artifact
+    assert result[0].provider == "identity"
 
 
-def test_identity_provider_empty():
+def test_identity_provider_preserves_media_id():
     provider = IdentityProvider()
-    result = list(provider.process([]))
-    assert result == []
+    media = ImageMedia(name="test.jpg", width=100, height=100, fmt="JPEG")
+
+    result = provider.run(media)
+
+    assert result[0].media_id == media.id
 
 
 def test_identity_in_pipeline():

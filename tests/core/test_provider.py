@@ -1,6 +1,7 @@
 from sceneforge.core.artifact import Artifact
 from sceneforge.core.capability import Capability
 from sceneforge.core.provider import Provider
+from sceneforge.media.base import Media
 
 
 class DummyArtifact(Artifact):
@@ -21,8 +22,8 @@ class DummyProvider(Provider):
     def capabilities(self):
         return frozenset({Capability.CAPTION})
 
-    def process(self, artifacts, *, context=None):
-        return artifacts
+    def run(self, media: Media):
+        return [DummyArtifact(provider=self.name)]
 
 
 def test_provider_properties():

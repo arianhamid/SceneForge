@@ -3,13 +3,15 @@ SceneForge Pipeline Tests.
 """
 
 from sceneforge.core.artifact import Artifact, ArtifactKind
+from sceneforge.core.capability import Capability
 from sceneforge.core.pipeline import Pipeline
+from sceneforge.core.provider import Provider
 from sceneforge.media.image import ImageMedia
-from sceneforge.runtime import ProcessingContext
+from sceneforge.media.base import Media
 
 
-class EchoProvider:
-    """Provider that returns artifacts unchanged."""
+class EchoProvider(Provider):
+    """Provider that returns artifacts unchanged. Subclasses Provider ABC."""
 
     @property
     def name(self) -> str:
@@ -20,10 +22,10 @@ class EchoProvider:
         return "1.0.0"
 
     @property
-    def capabilities(self):
+    def capabilities(self) -> frozenset[Capability]:
         return frozenset()
 
-    def run(self, media):
+    def run(self, media: Media):
         """Process media and return artifacts."""
         return [
             Artifact(kind=ArtifactKind.ARTIFACT, provider=self.name)
@@ -31,7 +33,7 @@ class EchoProvider:
 
 
 class IdentityProvider:
-    """Provider that returns artifacts unchanged."""
+    """Provider that returns artifacts unchanged. Structural (no ABC inheritance)."""
 
     @property
     def name(self) -> str:
@@ -96,15 +98,6 @@ def test_pipeline_single_provider():
     assert len(result) == 1
 
 
-def test_pipeline_with_context():
-    """Pipeline should pass context to provider."""
-    media = ImageMedia(name="test.jpg", width=100, height=100, fmt="JPEG")
-    context = ProcessingContext(request_id="test-123")
-    pipeline = Pipeline(provider=EchoProvider())
-    result = list(pipeline.run(media, context=context))
-    assert len(result) == 1
-
-
 def test_pipeline_empty():
     """Pipeline should handle empty media gracefully."""
     media = ImageMedia(name="empty.jpg", width=0, height=0, fmt="JPEG")
@@ -113,9 +106,19 @@ def test_pipeline_empty():
     assert result == []
 
 
-def test_pipeline_chain():
-    """Pipeline with single provider should work."""
+def test_pipeline_abc_subclass():
+    """Pipeline should work with providers that subclass Provider ABC."""
     media = ImageMedia(name="test.jpg", width=100, height=100, fmt="JPEG")
     pipeline = Pipeline(provider=EchoProvider())
     result = list(pipeline.run(media))
     assert len(result) == 1
+    assert result[0].provider == "echo"
+
+
+def test_pipeline_structural_provider():
+    """Pipeline should work with structural providers (duck typing)."""
+    media = ImageMedia(name="test.jpg", width=100, height=100, fmt="JPEG")
+    pipeline = Pipeline(provider=IdentityProvider())
+    result = list(pipeline.run(media))
+    assert len(result) == 1
+    assert result[0].provider == "identity"

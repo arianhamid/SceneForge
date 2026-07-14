@@ -7,14 +7,13 @@ Base class for all providers that interact with external AI systems.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sceneforge.core.artifact import Artifact
 from sceneforge.core.capability import Capability
 
 if TYPE_CHECKING:
-    from sceneforge.runtime.processing_context import ProcessingContext
+    from sceneforge.media.base import Media
 
 
 class Provider(ABC):
@@ -24,6 +23,8 @@ class Provider(ABC):
     Providers communicate with external AI systems and produce
     artifacts. They should never contain knowledge construction
     or application logic.
+
+    The run() method is the contract: accept Media, return list[Artifact].
     """
 
     @property
@@ -42,10 +43,5 @@ class Provider(ABC):
         """Return the capabilities this provider implements."""
 
     @abstractmethod
-    def process(
-        self,
-        artifacts: Iterable[Artifact],  # type: ignore[type-arg]
-        *,
-        context: ProcessingContext | None = None,
-    ) -> Iterable[Artifact]:  # type: ignore[type-arg]
-        """Process artifacts and return new artifacts."""
+    def run(self, media: Media) -> list[Artifact[Any]]:
+        """Process media and return artifacts."""

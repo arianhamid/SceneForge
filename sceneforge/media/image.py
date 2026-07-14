@@ -21,13 +21,13 @@ class ImageMedia(Media):
 
     width: int
     height: int
-    format: str
+    fmt: str
 
     @classmethod
     def from_dimensions(
-        cls, name: str, width: int, height: int, format: str
+        cls, name: str, width: int, height: int, fmt: str
     ) -> ImageMedia:
-        return cls(name=name, width=width, height=height, format=format)
+        return cls(name=name, width=width, height=height, fmt=fmt)
 
     @property
     def aspect_ratio(self) -> float:

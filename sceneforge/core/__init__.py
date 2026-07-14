@@ -6,6 +6,7 @@ The foundational layer of the SceneForge framework.
 
 from sceneforge.core.artifact import Artifact, ArtifactKind
 from sceneforge.core.capability import Capability
+from sceneforge.core.capability_registry import register_default_capabilities
 from sceneforge.core.exceptions import (
     DuplicateProviderError,
     IncompatibleMediaError,
@@ -41,4 +42,5 @@ __all__ = [
     "ProviderProtocol",
     "Registry",
     "SceneForgeError",
+    "register_default_capabilities",
 ]

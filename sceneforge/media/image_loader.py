@@ -17,7 +17,9 @@ from .exceptions import (
 )
 from .image import ImageMedia
 
-SUPPORTED_EXTENSIONS = frozenset({".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp"})
+SUPPORTED_EXTENSIONS = frozenset({
+    ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp",
+})
 
 _FORMAT_MAP = {
     ".jpg": "JPEG",

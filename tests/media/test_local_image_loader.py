@@ -85,3 +85,10 @@ def test_media_has_id():
 
     assert media.id is not None
     assert len(str(media.id)) == 36
+
+
+def test_empty_file_raises_invalid_media():
+    loader = LocalImageLoader(FIXTURES / "empty.jpg")
+
+    with pytest.raises(InvalidMediaError):
+        loader.load()

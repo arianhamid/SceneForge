@@ -51,3 +51,16 @@ def test_identity_in_pipeline():
 
     assert len(result) == 1
     assert result[0].provider == "identity"
+
+
+def test_identity_provider_with_pipeline():
+    """IdentityProvider should work with new Pipeline interface."""
+    from sceneforge.contrib.identity import IdentityProvider
+    from sceneforge.core.pipeline import Pipeline
+    from sceneforge.media.image import ImageMedia
+
+    media = ImageMedia(name="test.jpg", width=100, height=100, fmt="JPEG")
+    pipeline = Pipeline(provider=IdentityProvider())
+    result = list(pipeline.run(media))
+    assert len(result) == 1
+    assert result[0].provider == "identity"

@@ -4,6 +4,8 @@ SceneForge Exceptions
 Framework-specific exceptions for clear error handling.
 """
 
+from __future__ import annotations
+
 
 class SceneForgeError(Exception):
     """Base exception for all SceneForge errors."""
@@ -47,3 +49,15 @@ class InvalidMetadataError(SceneForgeError):
         super().__init__(f"Invalid metadata field '{field}': {reason}")
         self.field = field
         self.reason = reason
+
+
+class ProviderError(SceneForgeError):
+    """Base exception for all provider operations."""
+
+
+class InvalidMediaError(ProviderError):
+    """Raised when media is invalid for processing."""
+
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
+        super().__init__(f"Invalid media: {reason}")

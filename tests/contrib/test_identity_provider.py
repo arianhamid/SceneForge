@@ -5,6 +5,7 @@ Identity Provider Tests.
 from sceneforge.contrib.identity import IdentityProvider
 from sceneforge.core.artifact import Artifact, ArtifactKind
 from sceneforge.core.pipeline import Pipeline
+from sceneforge.media.image import ImageMedia
 
 
 def test_identity_provider_name():
@@ -40,10 +41,10 @@ def test_identity_provider_empty():
 
 def test_identity_in_pipeline():
     provider = IdentityProvider()
-    pipeline = Pipeline([provider])
+    pipeline = Pipeline(provider=provider)
 
-    artifact = Artifact(kind=ArtifactKind.FRAME, provider="test")
-    result = list(pipeline.run([artifact]))
+    media = ImageMedia(name="test.jpg", width=100, height=100, fmt="JPEG")
+    result = list(pipeline.run(media))
 
     assert len(result) == 1
-    assert result[0] is artifact
+    assert result[0].provider == "identity"

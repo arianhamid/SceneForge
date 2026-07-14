@@ -1,39 +1,50 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 from sceneforge.core.artifact import Artifact
-from sceneforge.core.provider import Provider
-from sceneforge.runtime import ProcessingContext
+
+if TYPE_CHECKING:
+    from sceneforge.media.base import Media
+    from sceneforge.runtime import ProcessingContext
 
 
 class Pipeline:
     """
-    Sequential provider pipeline.
+    The orchestration boundary for SceneForge.
 
-    Executes providers in registration order.
+    Pipeline is the single entry point for processing media through providers.
+    It owns the workflow: Media -> Provider -> Artifacts.
+
+    Example:
+        pipeline = Pipeline(provider=IdentityProvider())
+        artifacts = pipeline.run(media)
     """
 
-    def __init__(
-        self,
-        providers: Iterable[Provider],
-    ) -> None:
+    def __init__(self, provider: object) -> None:
+        """
+        Initialize Pipeline with a single provider.
 
-        self._providers = tuple(providers)
+        Args:
+            provider: The provider to use for processing.
+        """
+        self._provider = provider
 
     def run(
         self,
-        artifacts: Iterable[Artifact],  # type: ignore[type-arg]
+        media: Media,
         *,
         context: ProcessingContext | None = None,
-    ) -> Iterable[Artifact]:  # type: ignore[type-arg]
+    ) -> Iterable[Artifact]:
+        """
+        Process media through the provider and return artifacts.
 
-        result = artifacts
+        Args:
+            media: The media object to process.
+            context: Optional processing context for state management.
 
-        for provider in self._providers:
-            result = provider.process(
-                result,
-                context=context,
-            )
-
-        return result
+        Returns:
+            An iterable of artifacts produced by the provider.
+        """
+        return self._provider.run(media)

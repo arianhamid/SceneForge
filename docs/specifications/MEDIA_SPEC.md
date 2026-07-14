@@ -33,7 +33,7 @@ class Media:
 Represents an image resource.
 
 ```python
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ImageMedia(Media):
     width: int
     height: int
@@ -49,7 +49,7 @@ Properties:
 Represents a video resource.
 
 ```python
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class VideoMedia(Media):
     duration: float
     codec: str
@@ -64,13 +64,22 @@ Properties:
 Represents an audio resource.
 
 ```python
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class AudioMedia(Media):
     duration: float
     sample_rate: int
     channels: int
     bit_depth: int = 16
 ```
+
+## Factory Methods
+
+Convenience classmethods for common construction patterns:
+
+- `ImageMedia.from_dimensions(width, height, fmt, **kwargs)` — create from dimensions without pre-computing pixel counts
+- `VideoMedia.from_file(path, **kwargs)` — create from a file path (requires a Provider to extract codec/fps metadata)
+- `VideoMedia.from_path(path)` — shorthand alias for `from_file`
+- `AudioMedia.from_file(path, **kwargs)` — create from a file path (requires a Provider to extract sample rate/channels metadata)
 
 ## Usage
 
@@ -88,3 +97,4 @@ audio = AudioMedia(name="sound.wav", duration=30.0, sample_rate=44100, channels=
 - No decoding logic
 - No lazy loading
 - No hidden state
+- `metadata` is wrapped in `MappingProxyType` at init, making it truly immutable after construction

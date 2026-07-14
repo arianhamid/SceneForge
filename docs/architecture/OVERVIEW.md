@@ -36,6 +36,26 @@ Examples:
 
 Providers never communicate directly with applications.
 
+## Capability Validation
+
+Pipeline validates media compatibility before provider execution:
+
+1. **Capability Registration**: Each capability is registered with the media types it supports.
+2. **Media Validation**: Before calling `provider.run(media)`, Pipeline checks if the media type is compatible with the provider's capabilities.
+3. **Error Handling**: If incompatible, Pipeline raises `IncompatibleMediaError` with provider and media details.
+4. **Zero Capability Check in Providers**: Providers contain zero capability checks — validation is handled entirely by Pipeline.
+
+```python
+from sceneforge.core.pipeline import Pipeline
+from sceneforge.core.exceptions import IncompatibleMediaError
+
+pipeline = Pipeline(provider=ImageProvider())
+try:
+    pipeline.run(audio_media)  # ImageProvider doesn't support audio
+except IncompatibleMediaError as e:
+    print(f"Cannot process {e.media_type} with {e.provider}")
+```
+
 ---
 
 # Layer 2 — Artifacts

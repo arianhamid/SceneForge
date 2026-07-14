@@ -40,6 +40,50 @@ artifacts = pipeline.run(media)
 
 Pipeline is designed as a single-provider orchestrator in Phase 1.5. Provider composition (chaining) will be added in Phase 5.
 
+## Capability Validation
+
+Pipeline validates media compatibility before execution. Each capability is registered with the media types it supports, and Pipeline checks that the media type is compatible with the provider's capabilities.
+
+### How It Works
+
+1. When a Pipeline is created, default capability-to-media mappings are registered automatically.
+2. Before executing `provider.run(media)`, Pipeline validates that the media type is compatible with the provider's capabilities.
+3. If incompatible, Pipeline raises `IncompatibleMediaError`.
+4. If a provider has no capabilities, all media types are accepted.
+
+### Capability-to-Media Mapping
+
+```python
+from sceneforge.core.pipeline import register_capability_media
+from sceneforge.core.capability import Capability
+from sceneforge.media.image import ImageMedia
+
+# Register that CAPTION capability supports ImageMedia
+register_capability_media(Capability.CAPTION, {ImageMedia})
+```
+
+### IncompatibleMediaError
+
+Raised when media is incompatible with provider capabilities:
+
+```python
+from sceneforge.core.exceptions import IncompatibleMediaError
+
+try:
+    pipeline.run(audio_media)  # Provider only supports images
+except IncompatibleMediaError as e:
+    print(f"Provider '{e.provider}' cannot process '{e.media_type}'")
+    print(f"Capabilities: {e.capabilities}")
+```
+
+### Default Registrations
+
+The following capabilities are registered by default:
+- **Image/Video capabilities**: CAPTION, OCR, FACE_DETECTION, OBJECT_DETECTION, EMBEDDING
+- **Video-only capabilities**: DETECT_SCENES, FRAME_EXTRACTION
+- **Audio capabilities**: TRANSCRIBE, AUDIO_ANALYSIS
+- **Cross-media capabilities**: EMBEDDING (Image, Video, Audio), TRANSCRIBE (Audio, Video)
+
 ## IdentityProvider
 
 The simplest provider, useful for testing pipeline architecture.

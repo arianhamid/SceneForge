@@ -1,11 +1,9 @@
-import pytest
-
 from sceneforge.media.exceptions import (
+    InvalidMediaError,
     MediaError,
+    MediaIOError,
     MediaNotFoundError,
     UnsupportedMediaError,
-    InvalidMediaError,
-    MediaIOError,
 )
 
 
@@ -48,6 +46,7 @@ def test_invalid_media_has_path():
 
 
 def test_media_io_has_path():
-    exc = MediaIOError(path="/locked.jpg", original=PermissionError("denied"))
+    original = PermissionError("denied")
+    exc = MediaIOError(path="/locked.jpg", original=original)
     assert exc.path == "/locked.jpg"
-    assert exc.__cause__ is not None
+    assert exc.__cause__ is original

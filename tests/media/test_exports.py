@@ -1,12 +1,12 @@
 from sceneforge.media import (
-    Media,
-    ImageMedia,
-    VideoMedia,
     AudioMedia,
-    MediaLoader,
+    ImageMedia,
+    LocalAudioLoader,
     LocalImageLoader,
     LocalVideoLoader,
-    LocalAudioLoader,
+    Media,
+    MediaLoader,
+    VideoMedia,
 )
 
 

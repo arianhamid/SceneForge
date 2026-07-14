@@ -61,3 +61,21 @@ class InvalidMediaError(ProviderError):
     def __init__(self, reason: str) -> None:
         self.reason = reason
         super().__init__(f"Invalid media: {reason}")
+
+
+class IncompatibleMediaError(SceneForgeError):
+    """Raised when media is incompatible with provider capabilities."""
+
+    def __init__(
+        self,
+        provider: str,
+        media_type: str,
+        capabilities: set[str],
+    ) -> None:
+        self.provider = provider
+        self.media_type = media_type
+        self.capabilities = capabilities
+        super().__init__(
+            f"Provider '{provider}' cannot process '{media_type}' "
+            f"with capabilities {capabilities}"
+        )

@@ -8,6 +8,7 @@ from sceneforge.core.artifact import Artifact, ArtifactKind
 from sceneforge.core.capability import Capability
 from sceneforge.core.exceptions import (
     DuplicateProviderError,
+    IncompatibleMediaError,
     InvalidMediaError,
     InvalidMetadataError,
     InvalidNameError,
@@ -28,6 +29,7 @@ __all__ = [
     "Capability",
     "DuplicateProviderError",
     "IdentityArtifact",
+    "IncompatibleMediaError",
     "InvalidMediaError",
     "InvalidMetadataError",
     "InvalidNameError",

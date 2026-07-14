@@ -1,5 +1,7 @@
 from pathlib import Path
+
 import pytest
+
 from sceneforge.media.video import VideoMedia
 
 
@@ -38,6 +40,8 @@ def test_video_media_frame_count():
 
 
 def test_video_media_from_path():
-    video = VideoMedia.from_path(Path("movie.mp4"), duration=60.0, codec="h265", fps=24.0)
+    video = VideoMedia.from_path(
+        Path("movie.mp4"), duration=60.0, codec="h265", fps=24.0
+    )
 
     assert video.name == "movie.mp4"

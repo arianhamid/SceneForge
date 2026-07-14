@@ -25,11 +25,15 @@ class VideoMedia(Media):
     fps: float
 
     @classmethod
-    def from_file(cls, name: str, duration: float, codec: str, fps: float) -> VideoMedia:
+    def from_file(
+        cls, name: str, duration: float, codec: str, fps: float
+    ) -> VideoMedia:
         return cls(name=name, duration=duration, codec=codec, fps=fps)
 
     @classmethod
-    def from_path(cls, path: Path, duration: float, codec: str, fps: float) -> VideoMedia:
+    def from_path(
+        cls, path: Path, duration: float, codec: str, fps: float
+    ) -> VideoMedia:
         return cls(name=path.name, duration=duration, codec=codec, fps=fps)
 
     @property

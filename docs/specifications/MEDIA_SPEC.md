@@ -98,3 +98,63 @@ audio = AudioMedia(name="sound.wav", duration=30.0, sample_rate=44100, channels=
 - No lazy loading
 - No hidden state
 - `metadata` is wrapped in `MappingProxyType` at init, making it truly immutable after construction
+
+## MediaLoader Protocol
+
+The `MediaLoader` protocol defines the contract for loading media objects.
+
+```python
+from typing import Protocol
+
+class MediaLoader(Protocol):
+    def load(self) -> Media:
+        ...
+```
+
+Any class with a `load()` method returning `Media` participates.
+Implementations don't need to inherit from this protocol.
+
+## Local File Loaders
+
+Type-specific loaders for loading media from the local filesystem:
+
+- `LocalImageLoader(path)` → `ImageMedia`
+- `LocalVideoLoader(path)` → `VideoMedia`
+- `LocalAudioLoader(path)` → `AudioMedia`
+
+### Usage
+
+```python
+from sceneforge.media import LocalImageLoader, LocalVideoLoader, LocalAudioLoader
+
+image = LocalImageLoader("photo.jpg").load()
+video = LocalVideoLoader("movie.mp4").load()
+audio = LocalAudioLoader("sound.wav").load()
+```
+
+### Path Handling
+
+Loaders accept `str | os.PathLike[str]` and normalize to `pathlib.Path`.
+
+### Error Handling
+
+Loaders raise framework-specific exceptions:
+
+- `MediaNotFoundError` — file does not exist
+- `UnsupportedMediaError` — file extension not supported
+- `InvalidMediaError` — media data is corrupted
+- `MediaIOError` — I/O error during access
+
+### Metadata
+
+Loaders extract inexpensive, stable metadata:
+- Identity: filename, extension
+- File system: size_bytes, modified_at
+- Basic format: width/height for images, codec/fps for video, etc.
+
+### Design Principles
+
+- Type-specific loaders (single responsibility)
+- Return Media objects, never raw bytes
+- Never expose third-party types in public API
+- Test with real fixture files, not mocks

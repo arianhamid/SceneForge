@@ -1,4 +1,4 @@
-from sceneforge.media import Media, ImageMedia, VideoMedia, AudioMedia
+from sceneforge.media import AudioMedia, ImageMedia, Media, VideoMedia
 
 
 def test_all_media_types_exported():

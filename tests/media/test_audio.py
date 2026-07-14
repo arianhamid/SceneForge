@@ -1,4 +1,5 @@
 import pytest
+
 from sceneforge.media.audio import AudioMedia
 
 
@@ -24,7 +25,9 @@ def test_audio_media_is_immutable():
 
 
 def test_audio_media_from_file():
-    audio = AudioMedia.from_file("sound.wav", duration=30.0, sample_rate=44100, channels=2)
+    audio = AudioMedia.from_file(
+        "sound.wav", duration=30.0, sample_rate=44100, channels=2
+    )
 
     assert audio.name == "sound.wav"
 

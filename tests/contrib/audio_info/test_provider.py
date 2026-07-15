@@ -5,6 +5,7 @@ import pytest
 from sceneforge.contrib.audio_info import AudioInfoProvider
 from sceneforge.contrib.audio_info.artifacts import AudioInfoArtifact
 from sceneforge.media.audio import AudioMedia
+from tests.contracts.provider_contract import provider_contract
 
 
 def test_audio_info_provider_name():
@@ -73,3 +74,17 @@ def test_audio_info_provider_capabilities():
     """AudioInfoProvider should have empty capabilities."""
     provider = AudioInfoProvider()
     assert provider.capabilities == frozenset()
+
+
+def test_audio_info_provider_satisfies_contract():
+    """AudioInfoProvider should satisfy provider contract."""
+    provider = AudioInfoProvider()
+    audio = AudioMedia(
+        name="sound.wav",
+        duration=30.0,
+        sample_rate=44100,
+        channels=2
+    )
+
+    # Should not raise
+    provider_contract(provider, audio)

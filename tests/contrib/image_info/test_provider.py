@@ -3,6 +3,7 @@
 from sceneforge.contrib.image_info import ImageInfoProvider
 from sceneforge.contrib.image_info.artifacts import ImageInfoArtifact
 from sceneforge.media.image import ImageMedia
+from tests.contracts.provider_contract import provider_contract
 
 
 def test_image_info_provider_name():
@@ -68,3 +69,12 @@ def test_image_info_provider_capabilities():
     """ImageInfoProvider should have empty capabilities."""
     provider = ImageInfoProvider()
     assert provider.capabilities == frozenset()
+
+
+def test_image_info_provider_satisfies_contract():
+    """ImageInfoProvider should satisfy provider contract."""
+    provider = ImageInfoProvider()
+    image = ImageMedia(name="test.jpg", width=100, height=100, fmt="JPEG")
+
+    # Should not raise
+    provider_contract(provider, image)

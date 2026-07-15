@@ -10,6 +10,7 @@ from sceneforge.runtime.media_runtime.audio_representation import (
 )
 from sceneforge.runtime.media_runtime.decoder_protocol import Decoder
 from sceneforge.runtime.media_runtime.image_representation import ImageRepresentation
+from sceneforge.runtime.media_runtime.stub_decoder import StubDecoder
 from sceneforge.runtime.media_runtime.video_representation import (
     VideoFrameRepresentation,
     VideoRepresentation,
@@ -20,6 +21,7 @@ __all__ = [
     "AudioRepresentation",
     "Decoder",
     "ImageRepresentation",
+    "StubDecoder",
     "VideoFrameRepresentation",
     "VideoRepresentation",
 ]

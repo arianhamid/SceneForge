@@ -45,7 +45,44 @@ SceneForge never modifies media.
 
 ---
 
-# Layer 1 — Providers
+# Layer 1 — Runtime Infrastructure
+
+Runtime infrastructure provides execution-time services for media processing.
+
+## Media Runtime
+
+Handles decoding of media into representations:
+
+- **ImageRepresentation** — Decoded image pixels with metadata
+- **VideoRepresentation** — Video metadata with on-demand frame access
+- **AudioRepresentation** — Audio metadata with on-demand chunk access
+
+## Decoder Protocol
+
+Defines how media is decoded into representations:
+
+```python
+class Decoder(Protocol):
+    def decode(self, media: Media) -> Any: ...
+```
+
+Providers request decoding via the Decoder protocol, never performing it directly.
+
+## Responsibilities
+
+✓ Decode media into representations
+✓ Provide execution-time data structures
+✓ Isolate providers from media I/O details
+
+## Forbidden
+
+✗ Contain AI model logic
+✗ Make assumptions about media content
+✗ Communicate with applications
+
+---
+
+# Layer 2 — Providers
 
 Providers communicate with external AI systems.
 
@@ -77,7 +114,7 @@ Forbidden
 
 ---
 
-# Layer 2 — Artifacts
+# Layer 3 — Artifacts
 
 Artifacts are immutable observations.
 
@@ -110,7 +147,7 @@ Artifacts never contain reasoning.
 
 ---
 
-# Layer 3 — Knowledge Builders
+# Layer 4 — Knowledge Builders
 
 Knowledge Builders merge artifacts into reusable entities.
 
@@ -132,7 +169,7 @@ Knowledge Builders may merge information from many providers.
 
 ---
 
-# Layer 4 — Knowledge Graph
+# Layer 5 — Knowledge Graph
 
 The central database of understanding.
 
@@ -158,7 +195,7 @@ Everything inside SceneForge eventually converges here.
 
 ---
 
-# Layer 5 — Intelligence
+# Layer 6 — Intelligence
 
 Reasoners operate exclusively on the Knowledge Graph.
 
@@ -182,7 +219,7 @@ Reasoners never call providers.
 
 ---
 
-# Layer 6 — Applications
+# Layer 7 — Applications
 
 Applications consume Intelligence.
 
@@ -211,6 +248,10 @@ Applications never perform extraction.
 Allowed
 
 Media
+
+↓
+
+Runtime Infrastructure
 
 ↓
 
@@ -243,6 +284,8 @@ Reasoners → Providers
 Artifacts → Intelligence
 
 Knowledge → Media
+
+Runtime Infrastructure → Applications
 
 These rules keep SceneForge modular and replaceable.
 

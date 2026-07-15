@@ -15,6 +15,8 @@ SceneForge is organized as a layered architecture.
                        │
                     Providers
                        │
+             Runtime Infrastructure
+                       │
                  Source Media
 ```
 
@@ -35,6 +37,42 @@ Examples:
 - Scene detectors
 
 Providers never communicate directly with applications.
+
+---
+
+# Runtime Infrastructure
+
+Runtime infrastructure provides execution-time services for media processing.
+
+## Media Runtime
+
+The media runtime layer handles decoding of media into representations:
+
+- **ImageRepresentation** — Decoded image pixels with metadata
+- **VideoRepresentation** — Video metadata with on-demand frame access
+- **AudioRepresentation** — Audio metadata with on-demand chunk access
+
+## Decoder Protocol
+
+The `Decoder` protocol defines how media is decoded into representations:
+
+```python
+class Decoder(Protocol):
+    def decode(self, media: Media) -> Any: ...
+```
+
+Providers request decoding via the Decoder protocol, never performing it directly.
+
+This separation ensures:
+- No OpenCV-specific APIs leak into providers
+- Decoding can be swapped (OpenCV, FFmpeg, etc.)
+- Providers focus on AI model execution, not media I/O
+
+## StubDecoder
+
+A reference implementation for testing that returns placeholder representations without actual decoding.
+
+---
 
 ## Capability Validation
 

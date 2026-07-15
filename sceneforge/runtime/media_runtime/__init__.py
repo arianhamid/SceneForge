@@ -8,6 +8,7 @@ from sceneforge.runtime.media_runtime.audio_representation import (
     AudioChunkRepresentation,
     AudioRepresentation,
 )
+from sceneforge.runtime.media_runtime.decoder_protocol import Decoder
 from sceneforge.runtime.media_runtime.image_representation import ImageRepresentation
 from sceneforge.runtime.media_runtime.video_representation import (
     VideoFrameRepresentation,
@@ -17,6 +18,7 @@ from sceneforge.runtime.media_runtime.video_representation import (
 __all__ = [
     "AudioChunkRepresentation",
     "AudioRepresentation",
+    "Decoder",
     "ImageRepresentation",
     "VideoFrameRepresentation",
     "VideoRepresentation",

@@ -34,6 +34,17 @@ class ArtifactKind(StrEnum):
     AUDIO_SEGMENT = "audio_segment"
 
 
+class ArtifactCategory(StrEnum):
+    """Classification of artifacts by their role in the pipeline."""
+
+    METADATA = "metadata"
+    ANALYSIS = "analysis"
+    DETECTION = "detection"
+    RECOGNITION = "recognition"
+    DERIVED = "derived"
+    TRANSFORMATION = "transformation"
+
+
 @dataclass(frozen=True, slots=True)
 class Artifact(ABC, Generic[T]):
     """
@@ -52,6 +63,8 @@ class Artifact(ABC, Generic[T]):
     id: UUID = field(default_factory=uuid4)
 
     kind: ArtifactKind = ArtifactKind.ARTIFACT
+
+    category: ArtifactCategory = ArtifactCategory.METADATA
 
     provider: str = "unknown"
 

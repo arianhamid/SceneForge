@@ -1,4 +1,4 @@
-from sceneforge.core.artifact import Artifact, ArtifactKind
+from sceneforge.core.artifact import Artifact, ArtifactCategory, ArtifactKind
 
 
 class DummyArtifact(Artifact):
@@ -44,3 +44,22 @@ def test_artifact_metadata_is_immutable():
         raise AssertionError("Metadata should be immutable")
     except TypeError:
         pass
+
+
+def test_artifact_category_enum_values():
+    assert ArtifactCategory.METADATA == "metadata"
+    assert ArtifactCategory.ANALYSIS == "analysis"
+    assert ArtifactCategory.DETECTION == "detection"
+    assert ArtifactCategory.RECOGNITION == "recognition"
+    assert ArtifactCategory.DERIVED == "derived"
+    assert ArtifactCategory.TRANSFORMATION == "transformation"
+
+
+def test_artifact_has_category_field():
+    artifact = DummyArtifact()
+    assert hasattr(artifact, "category")
+
+
+def test_artifact_category_defaults_to_metadata():
+    artifact = DummyArtifact()
+    assert artifact.category == ArtifactCategory.METADATA

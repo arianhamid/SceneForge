@@ -5,15 +5,16 @@ Live snapshot — update this when the state actually changes. See
 
 ## Current Sprint
 
-Genesis Sprint 12: four consecutive spikes found no gap in Layer 5.
-Pivoting to the first real Application — the actual point of this
-framework, per `docs/philosophy/VISION.md`'s own success definition.
+Genesis Sprint 12: First real Application (SceneSummary) built and
+validated. MediaHashProvider added. ArtifactCategory formalized.
+Entity Provenance typed. Knowledge Validation structured. Architecture
+tests enforcing real dependency graph. ADR-0020 Stable API documented.
 
 ## Completed
 
 - Layers 0-3 (Media, Runtime, Providers, Artifacts) implemented and
-  tested (308 tests, `ruff check` clean, `mypy --strict` clean across
-  73 source files).
+  tested (315+ tests, `ruff check` clean, `mypy --strict` clean across
+  79 source files).
 - Four real providers across two capability domains:
   `sceneforge.contrib.ffmpeg`, `sceneforge.contrib.scenedetect`,
   `sceneforge.contrib.whisper` (video/audio), `sceneforge.contrib.opencv`
@@ -34,8 +35,26 @@ framework, per `docs/philosophy/VISION.md`'s own success definition.
   (`examples/end_to_end/analyze_video.py`): full chain including
   cross-domain face detection and cross-builder merging.
 - Documentation: `docs/philosophy/VISION.md`, `NAMING_CONVENTIONS.md`/
-  `STYLE_GUIDE.md`, ADRs 0006-0019, `docs/guides/ADDING_A_PROVIDER.md`,
+  `STYLE_GUIDE.md`, ADRs 0006-0020, `docs/guides/ADDING_A_PROVIDER.md`,
   corrected fictional content across several specs.
+- **Sprint 12 (first real Application):**
+  - `sceneforge/applications/scene_summary.py`: SceneSummary with
+    collect/render separation, using REAL entity metadata keys
+  - `sceneforge/contrib/media_hash/`: MediaHashProvider with stable
+    file-content hashing (SHA-256)
+  - `ArtifactCategory` enum (METADATA, ANALYSIS, DETECTION, RECOGNITION,
+    DERIVED, TRANSFORMATION)
+  - Typed `Provenance` dataclass on Entity (builder, source_artifact_ids,
+    confidence)
+  - Structured `ValidationIssue` with severity (WARNING/ERROR) and
+    entity_id
+  - Knowledge validation: orphan scenes, duplicate indices, self-refs,
+    timeline consistency
+  - Architecture tests enforcing real dependency graph (11 tests)
+  - Integration tests: full pipeline, evaluation metrics, dataset
+    validation
+  - ADR-0020: Stable API Surface documentation
+  - Builder dependency graph documented
 
 ## Known Problems
 

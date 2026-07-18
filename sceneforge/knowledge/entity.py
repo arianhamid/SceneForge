@@ -27,6 +27,15 @@ from uuid import UUID, uuid4
 T = TypeVar("T")
 
 
+@dataclass(frozen=True, slots=True)
+class Provenance:
+    """Typed provenance metadata for an entity."""
+
+    builder: str
+    source_artifact_ids: tuple[UUID, ...] = ()
+    confidence: float | None = None
+
+
 class EntityKind(StrEnum):
     """Vocabulary of entity types. Prevents string typos."""
 
@@ -64,6 +73,8 @@ class Entity(Generic[T]):
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
     parents: tuple[UUID, ...] = ()
+
+    provenance: Provenance | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(

@@ -10,8 +10,10 @@ from dataclasses import dataclass, field
 from uuid import UUID, uuid4
 
 from sceneforge.core.artifact import Artifact, ArtifactKind
+from sceneforge.core.storage import register_artifact_type
 
 
+@register_artifact_type
 @dataclass(frozen=True, slots=True)
 class ImageInfoArtifact(Artifact[None]):
     """Artifact containing image metadata."""

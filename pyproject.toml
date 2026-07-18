@@ -25,7 +25,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Multimedia :: Video",
@@ -44,6 +43,15 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.0",
 ]
+scenedetect = [
+    "scenedetect>=0.7",
+]
+whisper = [
+    "faster-whisper>=1.0",
+]
+opencv = [
+    "opencv-python-headless>=4.8",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["core", "tests"]
@@ -51,7 +59,7 @@ python_files = ["test_*.py"]
 python_functions = ["test_*"]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 88
 
 [tool.ruff.lint]
@@ -62,3 +70,16 @@ python_version = "3.11"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+# scenedetect ships no py.typed marker / stubs. faster_whisper isn't
+# imported directly by sceneforge (WhisperModelProtocol is structural,
+# see sceneforge/contrib/whisper/provider.py), so it needs no override.
+module = "scenedetect.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# cv2's bundled stubs don't cover the cv2.data submodule attribute
+# (cv2.data.haarcascades) used by sceneforge/contrib/opencv.
+module = "cv2.*"
+ignore_missing_imports = true

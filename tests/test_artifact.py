@@ -18,7 +18,7 @@ def test_artifact_is_immutable():
 
     try:
         artifact.kind = ArtifactKind.FRAME  # type: ignore[misc]
-        assert False, "Artifact should be immutable"
+        raise AssertionError("Artifact should be immutable")
     except AttributeError:
         pass
 
@@ -41,6 +41,6 @@ def test_artifact_metadata_is_immutable():
 
     try:
         artifact.metadata["new_key"] = "new_value"  # type: ignore[index]
-        assert False, "Metadata should be immutable"
+        raise AssertionError("Metadata should be immutable")
     except TypeError:
         pass

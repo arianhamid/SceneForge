@@ -4,8 +4,8 @@ SceneForge Provider Registry Example
 Demonstrates registering and discovering providers.
 """
 
-from sceneforge.core.registry import Registry
 from sceneforge.contrib.identity import IdentityProvider
+from sceneforge.core.registry import Registry
 
 # Create registry
 registry = Registry()

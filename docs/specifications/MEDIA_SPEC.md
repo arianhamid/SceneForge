@@ -77,9 +77,32 @@ class AudioMedia(Media):
 Convenience classmethods for common construction patterns:
 
 - `ImageMedia.from_dimensions(width, height, fmt, **kwargs)` — create from dimensions without pre-computing pixel counts
-- `VideoMedia.from_file(path, **kwargs)` — create from a file path (requires a Provider to extract codec/fps metadata)
+- `VideoMedia.from_file(path, **kwargs)` — create from a file path (technical metadata is placeholder until a `MediaEnricher` runs)
 - `VideoMedia.from_path(path)` — shorthand alias for `from_file`
-- `AudioMedia.from_file(path, **kwargs)` — create from a file path (requires a Provider to extract sample rate/channels metadata)
+- `AudioMedia.from_file(path, **kwargs)` — create from a file path (technical metadata is placeholder until a `MediaEnricher` runs)
+
+## Correcting placeholder metadata: Media.evolve()
+
+Media is immutable, so nothing may ever be mutated in place — including
+turning placeholder technical metadata into real metadata. `evolve()` is
+the sanctioned path: it returns a new instance of the same concrete
+type with given fields replaced, merging (not replacing) the `metadata`
+dict:
+
+```python
+video = VideoMedia(name="movie.mp4", duration=0.0, codec="unknown", fps=0.0)
+enriched = video.evolve(duration=120.0, codec="h264", fps=24.0)
+
+enriched is not video       # True -- new instance
+enriched.id == video.id     # True -- same logical media, corrected facts
+video.duration               # 0.0 -- original is untouched
+```
+
+In practice this is called by a `MediaEnricher`
+(`sceneforge/core/enrichment.py`), not directly by application code —
+see `sceneforge.contrib.ffmpeg.FFprobeEnricher` for the reference
+implementation, and `docs/specifications/PROVIDER_SPEC.md`'s
+"MediaEnricher" section for how it plugs into `Pipeline`.
 
 ## Usage
 
@@ -150,9 +173,9 @@ Loaders raise framework-specific exceptions:
 Loaders extract inexpensive, stable metadata:
 - Identity: filename, extension
 - File system: size_bytes, modified_at, source
-- Format-specific fields (width/height, codec/fps, sample_rate/channels): return placeholder values; actual extraction delegated to Providers
+- Format-specific fields (width/height, codec/fps, sample_rate/channels): return placeholder values; real extraction is delegated to a `MediaEnricher`, not a `Provider` — see "Correcting placeholder metadata" above and `sceneforge/core/enrichment.py`. (An earlier version of this document said "Providers"; that was never actually implemented anywhere and conflated two different concerns.)
 
-Note: Loaders provide filesystem metadata and detect format (e.g., via magic bytes for images), but media-specific fields use placeholder values because extracting them requires decoding. Use a Provider to populate these fields.
+Note: Loaders provide filesystem metadata and detect format (e.g., via magic bytes for images), but media-specific fields use placeholder values because extracting them requires decoding. Use a `MediaEnricher` (e.g. `sceneforge.contrib.ffmpeg.FFprobeEnricher` for video) to populate these fields via `Pipeline(..., enricher=...)`.
 
 ### Design Principles
 

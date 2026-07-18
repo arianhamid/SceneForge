@@ -48,21 +48,51 @@ Running the same provider on the same input should produce an equivalent artifac
 
 # Required Fields
 
-Every artifact contains:
+This section previously listed `source`, `timestamp_start`, and
+`timestamp_end` as required fields — none of those exist on the actual
+`Artifact` dataclass and never did. Documenting fields that don't exist
+is worse than documenting none; this is the corrected list, matching
+`sceneforge/core/artifact.py` exactly:
 
-id
+- `id` — UUID, auto-generated
+- `kind` — an `ArtifactKind` (prevents string-typo'd artifact types)
+- `provider` — the name of the provider that produced this artifact
+- `created_at` — UTC timestamp of creation
+- `payload` — the actual observation (`Artifact[str]` for a caption,
+  `Artifact[None]` for a marker-only artifact like `IdentityArtifact`)
+- `metadata` — provider-specific extra data, wrapped `MappingProxyType`
+  at construction (truly immutable, not just conventionally so)
+- `parents` — tuple of UUIDs; how a correction/derived artifact links
+  back to the artifact(s) it was built from, without mutating them
 
-provider
+A specific artifact type (e.g. `FrameExtractionArtifact` in
+`sceneforge.contrib.ffmpeg`) adds its own fields as dataclass
+subclassing — `media_id`, `frame_path`, `timestamp_seconds`, etc.
+There is no single fixed schema every artifact type must match beyond
+the base fields above; per-kind fields belong to the subclass, not to
+this base spec.
 
-source
+---
 
-created_at
+# Persistence
 
-timestamp_start
+"Serializable" above is now a testable property, not just an intent:
+`sceneforge.core.storage.artifact_to_dict()` / `artifact_from_dict()`
+round-trip any `Artifact` subclass generically via `dataclasses.fields()`.
+Exact-type round-tripping (getting your subclass back, not the generic
+base `Artifact`) requires registering it once:
 
-timestamp_end
+```python
+from sceneforge.core.storage import register_artifact_type
 
-metadata
+@register_artifact_type
+@dataclass(frozen=True, slots=True)
+class MyArtifact(Artifact[str]):
+    confidence: float = 0.0
+```
+
+Every artifact type shipped in `sceneforge.contrib` already does this.
+See `docs/adr/0008-artifact-persistence.md`.
 
 ---
 

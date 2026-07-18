@@ -18,11 +18,14 @@ Create the world's most extensible framework for understanding visual stories.
 
 ## Current Phase
 
-Genesis
+Genesis (Sprint 3)
 
-The architecture, specifications, and core abstractions are being designed.
-
-No provider-specific logic should enter the core framework during this phase.
+The core abstractions (Media, Artifact, Provider, Pipeline,
+CapabilityRegistry, ArtifactStore) are stable enough that three real,
+non-stub providers now run against them successfully — see
+`.ai/PROJECT_STATE.md` for the live snapshot. Provider-specific logic
+still lives entirely in `sceneforge.contrib`, never in core; that rule
+held throughout Sprint 2 and 3 and should keep holding.
 
 ---
 

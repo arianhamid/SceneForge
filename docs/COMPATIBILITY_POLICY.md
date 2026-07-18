@@ -21,6 +21,18 @@ The following APIs are experimental. Breaking changes may occur.
 - Plugin discovery
 - Performance APIs
 - Capability registry
+- `ArtifactStore` / persistence (`FileArtifactStore`,
+  `InMemoryArtifactStore`, `content_key()`) — the serialization format
+  in particular is not yet guaranteed stable across versions; don't
+  build a production cache on `FileArtifactStore` assuming its on-disk
+  JSON shape won't change
+- `AsyncProvider` / `AsyncPipeline` — the retry/timeout/concurrency
+  parameter shape may still change as real usage surfaces what's
+  actually needed
+- `MediaEnricher` / `Media.evolve()` — the mechanism is settled (see
+  `docs/specifications/PROVIDER_SPEC.md`'s "MediaEnricher" section),
+  but only one real enricher (`FFprobeEnricher`) has exercised it so
+  far
 
 ## What Contributors Can Rely On
 

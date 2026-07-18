@@ -9,13 +9,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from sceneforge.media.audio import AudioMedia
 from sceneforge.media.base import Media
 from sceneforge.media.image import ImageMedia
 from sceneforge.media.video import VideoMedia
-from sceneforge.media.audio import AudioMedia
+from sceneforge.runtime.media_runtime.audio_representation import AudioRepresentation
 from sceneforge.runtime.media_runtime.image_representation import ImageRepresentation
 from sceneforge.runtime.media_runtime.video_representation import VideoRepresentation
-from sceneforge.runtime.media_runtime.audio_representation import AudioRepresentation
 
 
 class StubDecoder:

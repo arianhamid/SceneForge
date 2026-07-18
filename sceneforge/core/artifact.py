@@ -10,7 +10,7 @@ from __future__ import annotations
 from abc import ABC
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from types import MappingProxyType
 from typing import Any, Generic, TypeVar
@@ -56,7 +56,7 @@ class Artifact(ABC, Generic[T]):
     provider: str = "unknown"
 
     created_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
+        default_factory=lambda: datetime.now(UTC)
     )
 
     payload: T = None  # type: ignore[assignment]

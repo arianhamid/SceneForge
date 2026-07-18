@@ -10,11 +10,10 @@ def test_decoder_is_protocol():
 
 def test_decoder_is_runtime_checkable():
     """Decoder should be runtime_checkable."""
-    from sceneforge.media.image import ImageMedia
-    
+
     class MockDecoder:
         def decode(self, media):
             return None
-    
+
     # Should not raise TypeError
     assert isinstance(MockDecoder(), Decoder)

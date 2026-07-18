@@ -11,13 +11,18 @@ SceneForge is organized as a layered architecture.
                        │
               Knowledge Builders
                        │
-                   Artifacts
-                       │
-                    Providers
-                       │
+                   Artifacts  ◄──┐
+                       │         │ (cache read/write,
+                    Providers    │  see Persistence below)
+                       │         │
              Runtime Infrastructure
                        │
                  Source Media
+
+  Persistence (ArtifactStore) is cross-cutting, not a rung on this
+  ladder -- Pipeline and every layer at Artifacts and above can read
+  from and write to it. See docs/architecture/LAYERS.md's
+  "Persistence (cross-cutting, not a numbered layer)" section.
 ```
 
 Each layer has a single responsibility.
@@ -78,7 +83,10 @@ A reference implementation for testing that returns placeholder representations 
 
 Pipeline validates media compatibility before provider execution:
 
-1. **Capability Registration**: Each capability is registered with the media types it supports.
+1. **Capability Registration**: A `CapabilityRegistry` maps each capability to
+   the media types it supports. `Pipeline` takes one via constructor
+   injection (defaulting to a shared, pre-populated registry) rather than
+   reading from global state — see `docs/adr/0007-injectable-capability-registry.md`.
 2. **Media Validation**: Before calling `provider.run(media)`, Pipeline checks if the media type is compatible with the provider's capabilities.
 3. **Error Handling**: If incompatible, Pipeline raises `IncompatibleMediaError` with provider and media details.
 4. **Zero Capability Check in Providers**: Providers contain zero capability checks — validation is handled entirely by Pipeline.
@@ -93,6 +101,48 @@ try:
 except IncompatibleMediaError as e:
     print(f"Cannot process {e.media_type} with {e.provider}")
 ```
+
+Need a different (or isolated, e.g. for tests) set of rules? Pass your own:
+
+```python
+from sceneforge.core.capability_registry import CapabilityRegistry
+from sceneforge.core.capability import Capability
+
+registry = CapabilityRegistry()
+registry.register(Capability.CAPTION, {ImageMedia})
+pipeline = Pipeline(provider=ImageProvider(), capability_registry=registry)
+```
+
+## Enrichment: from placeholder to authoritative Media
+
+Loaders are cheap and filesystem-only, so a freshly-loaded `VideoMedia`
+has placeholder technical metadata (`duration=0.0`, `codec="unknown"`).
+A `MediaEnricher` corrects this before the Provider ever sees it, by
+returning a new `Media` instance via `Media.evolve()` (Media is
+immutable — nothing is ever mutated in place):
+
+```python
+from sceneforge.contrib.ffmpeg import FFprobeEnricher
+
+pipeline = Pipeline(provider=FrameExtractionProvider(), enricher=FFprobeEnricher())
+result = pipeline.run_detailed(media)  # result.media has real duration/fps/codec
+```
+
+## Caching: making "analyze once" literal
+
+Pass an `ArtifactStore` and `Pipeline` looks up a cached result (keyed
+on media identity + provider name + version) before running the
+provider, and persists a fresh result after a successful run:
+
+```python
+from sceneforge.core.storage import FileArtifactStore
+
+pipeline = Pipeline(provider=TranscribeProvider(), store=FileArtifactStore("./cache"))
+first = pipeline.run_detailed(media)   # runs the provider
+second = pipeline.run_detailed(media)  # from_cache=True, provider not re-run
+```
+
+See `docs/adr/0008-artifact-persistence.md` for why this exists and what it deliberately doesn't do yet.
 
 ---
 

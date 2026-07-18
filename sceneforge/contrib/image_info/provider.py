@@ -8,12 +8,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from sceneforge.contrib.image_info.artifacts import ImageInfoArtifact
 from sceneforge.core.artifact import Artifact
 from sceneforge.core.capability import Capability
 from sceneforge.core.provider import Provider
 from sceneforge.media.base import Media
 from sceneforge.media.image import ImageMedia
-from sceneforge.contrib.image_info.artifacts import ImageInfoArtifact
 
 
 class ImageInfoProvider(Provider):

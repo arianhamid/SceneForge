@@ -58,9 +58,17 @@ Dialogue
 
 # Relationship
 
-A connection between entities.
+A connection between entities. Represented as an `Entity` with kind
+`RELATIONSHIP`, whose `parents` point at the two related entity ids
+(see `docs/adr/0013-entity-relationships.md`) — no separate base type.
 
-Examples
+Real, shipped example (`sceneforge.knowledge`)
+
+`SceneSequenceBuilder` — "Scene N precedes Scene N+1", built by a
+`RelationshipBuilder` (a distinct Protocol from `KnowledgeBuilder`;
+see `docs/architecture/LAYERS.md`'s "Two builder shapes, not one").
+
+Illustrative examples (not yet implemented)
 
 Character appears in Scene.
 
@@ -126,11 +134,17 @@ Applications never call providers directly.
 
 An implementation of one or more capabilities.
 
-Examples
+Real, shipped examples (`sceneforge.contrib`)
+
+FFmpegFrameExtractionProvider (FRAME_EXTRACTION)
+
+PySceneDetectProvider (DETECT_SCENES)
+
+WhisperTranscribeProvider (TRANSCRIBE)
+
+Illustrative examples (not yet implemented)
 
 QwenVLProvider
-
-WhisperProvider
 
 JoyCaptionProvider
 
@@ -144,9 +158,22 @@ Providers are interchangeable.
 
 # Pipeline
 
-An ordered sequence of capabilities.
+Orchestrates one Provider's execution against one Media object:
+validate compatibility, optionally enrich, optionally check a cache,
+run the provider, optionally populate the cache.
 
-Example
+**Not yet implemented**: chaining several providers/capabilities into
+one ordered sequence, as the diagram below describes. Today, building
+a multi-step flow (extract frames, then detect scenes, then
+transcribe) means constructing one `Pipeline` per provider and calling
+each in application code — see `examples/end_to_end/analyze_video.py`
+for exactly that pattern. True composition (a `Pipeline` that owns the
+whole sequence) is real future work, not yet started; see
+`docs/specifications/PROVIDER_SPEC.md`'s "Pipeline as Orchestration
+Boundary" section and `.ai/PROJECT_STATE.md`'s open questions. The
+diagram below describes the *target* shape, not the current one.
+
+Example (target shape, not yet implemented)
 
 Movie
 

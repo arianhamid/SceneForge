@@ -51,7 +51,7 @@ class MemoryCache:
             # Remove oldest item (simplified: remove first key)
             oldest_key = next(iter(self._cache))
             del self._cache[oldest_key]
-        
+
         self._cache[media_id] = value
 
     def invalidate(self, media_id: UUID) -> bool:

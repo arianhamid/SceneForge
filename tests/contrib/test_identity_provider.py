@@ -3,7 +3,6 @@ Identity Provider Tests.
 """
 
 from sceneforge.contrib.identity import IdentityProvider
-from sceneforge.core.artifact import Artifact, ArtifactKind
 from sceneforge.core.pipeline import Pipeline
 from sceneforge.media.image import ImageMedia
 

@@ -134,24 +134,38 @@ Examples:
                        │
                Knowledge Graph
                        │
-              Extraction Pipelines
+              Knowledge Builders
                        │
-                  Artifacts
+                  Artifacts  ◄── ArtifactStore (persistence, cross-cutting)
+                       │
+                    Providers
+                       │
+             Runtime Infrastructure
                        │
                     Movie
 ```
+
+See [Layered Architecture](docs/architecture/LAYERS.md) for the full
+picture, including why persistence is cross-cutting rather than a rung
+on this ladder.
 
 ---
 
 ## Design Principles
 
-- Architecture before implementation.
+See [Vision](docs/philosophy/VISION.md) for the full list and the
+reasoning behind each. In short:
+
+- Architecture before implementation — but prove it against a real
+  external tool before formalizing the next layer.
 - Knowledge before generation.
 - Capabilities before models.
-- Immutable artifacts.
-- Plugin-first architecture.
-- Framework over workflows.
-- Documentation as a first-class feature.
+- Immutable artifacts, explicit corrections (`Media.evolve()`,
+  `Artifact.parents`).
+- Plugin-first architecture, discoverable via entry points.
+- No hidden state.
+- Documentation as a first-class feature — and kept honest about what's
+  actually implemented, not what's planned.
 
 ---
 
@@ -181,6 +195,47 @@ python -m venv .venv
 # source .venv/bin/activate  # macOS/Linux
 pip install -e ".[dev]"
 ```
+
+---
+
+## Quick Start
+
+Three real, working providers plus a Knowledge Builder — not stubs:
+
+```python
+from sceneforge.media.video_loader import LocalVideoLoader
+from sceneforge.contrib.ffmpeg import FFmpegFrameExtractionProvider, FFprobeEnricher
+from sceneforge.contrib.scenedetect import PySceneDetectProvider
+from sceneforge.core.pipeline import Pipeline
+from sceneforge.core.storage import FileArtifactStore
+from sceneforge.knowledge import SceneGroupingBuilder
+
+media = LocalVideoLoader("movie.mp4").load()  # placeholder metadata so far
+enricher = FFprobeEnricher()                   # fills in real duration/codec/fps
+store = FileArtifactStore("./cache")           # analyze once, reuse forever
+
+frames = Pipeline(
+    provider=FFmpegFrameExtractionProvider(frame_count=12),
+    enricher=enricher,
+    store=store,
+).run_detailed(media)
+
+scenes = Pipeline(provider=PySceneDetectProvider(), enricher=enricher, store=store).run_detailed(media)
+
+# Knowledge layer: group frames into the scenes they fall within
+entities = SceneGroupingBuilder().build([*frames.artifacts, *scenes.artifacts])
+for entity in entities:
+    print(entity.metadata["scene_index"], len(entity.metadata["frame_paths"]), "frames")
+```
+
+Requires `ffmpeg`/`ffprobe` on `PATH` and `pip install "sceneforge[scenedetect]"`.
+See [`docs/specifications/PROVIDER_SPEC.md`](docs/specifications/PROVIDER_SPEC.md)
+for the full Provider/Pipeline contract (including the `faster-whisper`
+transcription provider),
+[`docs/guides/ADDING_A_PROVIDER.md`](docs/guides/ADDING_A_PROVIDER.md)
+for how to add the next one, and
+[`examples/end_to_end/analyze_video.py`](examples/end_to_end/analyze_video.py)
+for this exact flow as a runnable script.
 
 ---
 
@@ -238,18 +293,31 @@ mypy sceneforge/
 
 ## Project Status
 
-🚧 **Genesis Phase**
+🚧 **Genesis Phase** — real, but still early. Layers 0-3 (Media, Runtime,
+Providers, Artifacts) are implemented and tested; Layers 4-7 (Knowledge
+Builders, Knowledge Graph, Intelligence, Applications) don't exist yet,
+not even as skeletons. See [`.ai/PROJECT_STATE.md`](.ai/PROJECT_STATE.md)
+for the live, honest snapshot — checklists like this one go stale fast,
+that file is the one kept current.
 
-The framework architecture is being implemented. Core abstractions are in place:
-
-- [x] Artifact base class (immutable, serializable)
-- [x] Provider abstraction
-- [x] Capability system
-- [x] Provider Registry
-- [ ] Knowledge Graph
-- [ ] Intelligence Engine
-- [ ] Pipeline system
-- [ ] Plugin ecosystem
+- [x] Artifact base class (immutable, serializable, persists via `ArtifactStore`)
+- [x] Media base class + `evolve()` for immutable metadata correction
+- [x] Provider abstraction (sync `Provider` + async `AsyncProvider`)
+- [x] Capability system (injectable `CapabilityRegistry`, no global state)
+- [x] Pipeline (validation, enrichment, retries, timing, caching, cancellation)
+- [x] Plugin ecosystem (entry-point discovery via `PluginRegistry.discover()`)
+- [x] Three real providers, one per shape: `sceneforge.contrib.ffmpeg` (subprocess), `sceneforge.contrib.scenedetect` (algorithmic), `sceneforge.contrib.whisper` (model-backed, dependency-injected)
+- [x] Fourth real provider, image domain: `sceneforge.contrib.opencv` (bundled weights, no injection needed — ADR-0015)
+- [x] First Knowledge Builder: `sceneforge.knowledge.SceneGroupingBuilder`, proven against real provider output
+- [x] Second Knowledge Builder, cross-domain: `SceneFaceBuilder` (video + image domains — ADR-0016)
+- [x] Cross-builder entity merge: `SceneMergeBuilder` (ADR-0018)
+- [x] Entity persistence: `EntityStore` (ADR-0012)
+- [x] Entity relationships: `RelationshipBuilder`/`SceneSequenceBuilder` (ADR-0013)
+- [x] Relationship querying measured at scale: 0.125s / 11,700 entities (ADR-0014)
+- [x] Cross-video aggregation measured at scale: 0.391s / 23,600 entities / 400 movies (ADR-0019)
+- [x] Registry/Pipeline wiring RFC: closed as unnecessary (ADR-0017)
+- [ ] First real Application (next up — see `.ai/NEXT_TASK.md`)
+- [ ] Knowledge Graph, Intelligence Engine (no measured gap found yet across four spikes — see ADR-0019)
 
 ---
 
@@ -258,12 +326,32 @@ The framework architecture is being implemented. Core abstractions are in place:
 - [Architecture Overview](docs/architecture/OVERVIEW.md)
 - [Domain Model](docs/architecture/DOMAIN_MODEL.md)
 - [Layered Architecture](docs/architecture/LAYERS.md)
-- [Core Principles](docs/philosophy/CORE_PRINCIPLES.md)
-- [Manifesto](docs/philosophy/MANIFESTO.md)
+- [Vision](docs/philosophy/VISION.md)
+- [Anti-Goals](docs/philosophy/ANTI_GOALS.md)
 - [Engineering Philosophy](.ai/ENGINEERING_PHILOSOPHY.md)
+- [Architecture Decision Records](docs/adr/) — start with
+  [0007](docs/adr/0007-injectable-capability-registry.md),
+  [0008](docs/adr/0008-artifact-persistence.md),
+  [0009](docs/adr/0009-async-providers.md),
+  [0010](docs/adr/0010-dependency-injected-model-providers.md),
+  [0011](docs/adr/0011-first-knowledge-builder-scope.md),
+  [0012](docs/adr/0012-entity-persistence.md),
+  [0013](docs/adr/0013-entity-relationships.md),
+  [0014](docs/adr/0014-relationship-query-spike.md),
+  [0015](docs/adr/0015-opencv-face-detection.md),
+  [0016](docs/adr/0016-cross-domain-knowledge-builder.md),
+  [0017](docs/adr/0017-registry-pipeline-rfc-closed.md),
+  [0018](docs/adr/0018-scene-merge-builder.md), and
+  [0019](docs/adr/0019-cross-video-query-spike.md) for the most recent
+  structural decisions
+- [Guide: Adding a Provider](docs/guides/ADDING_A_PROVIDER.md) — start
+  here if you're implementing the next capability
+- [Media Specification](docs/specifications/MEDIA_SPEC.md)
 - [Artifact Specification](docs/specifications/ARTIFACT_SPEC.md)
 - [Provider Specification](docs/specifications/PROVIDER_SPEC.md)
+- [Plugin Specification](docs/specifications/PLUGIN_SPEC.md)
 - [Registry Specification](docs/specifications/REGISTRY_SPEC.md)
+- [Runtime Specification](docs/specifications/RUNTIME_SPEC.md)
 
 ---
 

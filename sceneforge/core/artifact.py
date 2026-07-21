@@ -7,16 +7,13 @@ through the SceneForge framework.
 
 from __future__ import annotations
 
-from abc import ABC
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Any, Generic, TypeVar
+from typing import Any
 from uuid import UUID, uuid4
-
-T = TypeVar("T")
 
 
 class ArtifactKind(StrEnum):
@@ -46,7 +43,7 @@ class ArtifactCategory(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
-class Artifact(ABC, Generic[T]):
+class Artifact[T]:
     """
     Immutable base class for every SceneForge artifact.
 
@@ -68,9 +65,7 @@ class Artifact(ABC, Generic[T]):
 
     provider: str = "unknown"
 
-    created_at: datetime = field(
-        default_factory=lambda: datetime.now(UTC)
-    )
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     payload: T = None  # type: ignore[assignment]
 

@@ -9,7 +9,6 @@ class DummyArtifact(Artifact):
 
 
 class DummyProvider(Provider):
-
     @property
     def name(self) -> str:
         return "dummy"

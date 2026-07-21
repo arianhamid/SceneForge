@@ -181,6 +181,8 @@ docs/
 tests/               # Test suite
 examples/            # Usage examples
 .ai/                 # AI agent context and decisions
+AGENTS.md             # Durable Codex/AI engineering contract
+.github/              # CI, dependency updates, and review templates
 ```
 
 ---
@@ -190,10 +192,11 @@ examples/            # Usage examples
 ```bash
 git clone https://github.com/arianhamid/SceneForge.git
 cd SceneForge
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-# source .venv/bin/activate  # macOS/Linux
-pip install -e ".[dev]"
+python3.12 -m venv .venv  # Linux/macOS
+# py -3.12 -m venv .venv  # Windows
+.venv\Scripts\Activate.ps1  # Windows PowerShell
+# source .venv/bin/activate  # Linux/macOS
+python -m pip install -e ".[dev]"
 ```
 
 ---
@@ -243,60 +246,69 @@ for this exact flow as a runnable script.
 
 ### Environment Setup
 
+SceneForge requires the latest Python 3.12 patch release.
+
 ```bash
 # Create virtual environment
-python -m venv .venv
+python3.12 -m venv .venv  # Linux/macOS
+# py -3.12 -m venv .venv  # Windows
 
 # Activate it
-.venv\Scripts\activate  # Windows
-# source .venv/bin/activate  # macOS/Linux
+.venv\Scripts\Activate.ps1  # Windows PowerShell
+# source .venv/bin/activate  # Linux/macOS
 
 # Install dependencies
-pip install -e ".[dev]"
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
 ```
 
 ### Environment Variables
 
-Copy `.env` to `.env.local` and configure your API keys:
-
-```bash
-cp .env .env.local
-# Edit .env.local with your settings
-```
+The framework currently requires no environment variables or API keys. Optional
+future integrations must document their own configuration without committing
+secrets.
 
 ### Running Tests
 
 ```bash
-pytest tests/ -v
+python -m pytest -q
 ```
 
 ### Running Tests with Coverage
 
 ```bash
-pytest tests/ --cov=sceneforge --cov-report=html
+make coverage
 ```
+
+This instruments the complete suite and enforces the 80% project threshold.
 
 ### Linting
 
 ```bash
-ruff check sceneforge/
-ruff format sceneforge/
+python -m ruff check .
+python -m ruff format --check .
 ```
 
 ### Type Checking
 
 ```bash
-mypy sceneforge/
+python -m mypy --strict sceneforge
 ```
+
+Run every non-mutating quality gate with `make check`. Codex and other coding
+agents should follow [AGENTS.md](AGENTS.md); human contributors using AI should
+also read the [AI-assisted development guide](docs/guides/AI_ASSISTED_DEVELOPMENT.md).
 
 ---
 
 ## Project Status
 
-🚧 **Genesis Phase** — real, but still early. Layers 0-3 (Media, Runtime,
-Providers, Artifacts) are implemented and tested; Layers 4-7 (Knowledge
-Builders, Knowledge Graph, Intelligence, Applications) don't exist yet,
-not even as skeletons. See [`.ai/PROJECT_STATE.md`](.ai/PROJECT_STATE.md)
+🚧 **Genesis Phase** — real, but still early. Layers 0-4 (Media, Runtime,
+Providers, Artifacts, and Knowledge Builders) are implemented and tested, and
+Layer 7 has its first real application (`SceneSummary`). Dedicated Knowledge
+Graph and Intelligence infrastructure (Layers 5-6) does not exist because the
+current Entity/EntityStore design has covered every measured query so far. See
+[`.ai/PROJECT_STATE.md`](.ai/PROJECT_STATE.md)
 for the live, honest snapshot — checklists like this one go stale fast,
 that file is the one kept current.
 
@@ -308,16 +320,20 @@ that file is the one kept current.
 - [x] Plugin ecosystem (entry-point discovery via `PluginRegistry.discover()`)
 - [x] Three real providers, one per shape: `sceneforge.contrib.ffmpeg` (subprocess), `sceneforge.contrib.scenedetect` (algorithmic), `sceneforge.contrib.whisper` (model-backed, dependency-injected)
 - [x] Fourth real provider, image domain: `sceneforge.contrib.opencv` (bundled weights, no injection needed — ADR-0015)
+- [x] Fifth real provider: `sceneforge.contrib.tesseract` OCR (ADR-0022)
+- [x] Utility provider: `MediaHashProvider`
 - [x] First Knowledge Builder: `sceneforge.knowledge.SceneGroupingBuilder`, proven against real provider output
 - [x] Second Knowledge Builder, cross-domain: `SceneFaceBuilder` (video + image domains — ADR-0016)
+- [x] Third Knowledge Builder, OCR correlation: `SceneTextBuilder` (ADR-0022)
 - [x] Cross-builder entity merge: `SceneMergeBuilder` (ADR-0018)
 - [x] Entity persistence: `EntityStore` (ADR-0012)
 - [x] Entity relationships: `RelationshipBuilder`/`SceneSequenceBuilder` (ADR-0013)
 - [x] Relationship querying measured at scale: 0.125s / 11,700 entities (ADR-0014)
 - [x] Cross-video aggregation measured at scale: 0.391s / 23,600 entities / 400 movies (ADR-0019)
 - [x] Registry/Pipeline wiring RFC: closed as unnecessary (ADR-0017)
-- [ ] First real Application (next up — see `.ai/NEXT_TASK.md`)
-- [ ] Knowledge Graph, Intelligence Engine (no measured gap found yet across four spikes — see ADR-0019)
+- [x] First real Application: `SceneSummary` (Sprint 12)
+- [ ] First Fact-producing provider and builder (next up — see `.ai/NEXT_TASK.md`)
+- [ ] Dedicated Knowledge Graph and Intelligence Engine (no measured need yet)
 
 ---
 
@@ -344,8 +360,12 @@ that file is the one kept current.
   [0015](docs/adr/0015-opencv-face-detection.md),
   [0016](docs/adr/0016-cross-domain-knowledge-builder.md),
   [0017](docs/adr/0017-registry-pipeline-rfc-closed.md),
-  [0018](docs/adr/0018-scene-merge-builder.md), and
-  [0019](docs/adr/0019-cross-video-query-spike.md) for the most recent
+  [0018](docs/adr/0018-scene-merge-builder.md),
+  [0019](docs/adr/0019-cross-video-query-spike.md),
+  [0020](docs/adr/0020-stable-api-surface.md),
+  [0021](docs/adr/0021-world-model-vocabulary.md),
+  [0022](docs/adr/0022-real-ocr-provider.md), and
+  [0023](docs/adr/0023-python-3-12-baseline.md) for the most recent
   structural decisions
 - [Guide: Adding a Provider](docs/guides/ADDING_A_PROVIDER.md) — start
   here if you're implementing the next capability

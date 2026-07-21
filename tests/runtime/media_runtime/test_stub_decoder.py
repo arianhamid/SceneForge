@@ -25,12 +25,7 @@ def test_stub_decoder_image():
 def test_stub_decoder_video():
     """StubDecoder should decode VideoMedia."""
     decoder = StubDecoder()
-    video = VideoMedia(
-        name="movie.mp4",
-        duration=120.0,
-        codec="h264",
-        fps=30.0
-    )
+    video = VideoMedia(name="movie.mp4", duration=120.0, codec="h264", fps=30.0)
 
     result = decoder.decode(video)
 
@@ -43,12 +38,7 @@ def test_stub_decoder_video():
 def test_stub_decoder_audio():
     """StubDecoder should decode AudioMedia."""
     decoder = StubDecoder()
-    audio = AudioMedia(
-        name="sound.wav",
-        duration=30.0,
-        sample_rate=44100,
-        channels=2
-    )
+    audio = AudioMedia(name="sound.wav", duration=30.0, sample_rate=44100, channels=2)
 
     result = decoder.decode(audio)
 

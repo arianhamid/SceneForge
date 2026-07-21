@@ -1,9 +1,11 @@
+from typing import Protocol
+
 from sceneforge.media.base import Media
 from sceneforge.media.loader import MediaLoader
 
 
 def test_media_loader_is_protocol() -> None:
-    assert hasattr(MediaLoader, "__protocol_attrs__")
+    assert issubclass(MediaLoader, Protocol)
 
 
 def test_media_loader_has_load_method() -> None:

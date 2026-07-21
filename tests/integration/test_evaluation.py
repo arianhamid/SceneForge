@@ -36,15 +36,24 @@ def _make_synthetic_video(tmpdir: str | Path) -> Path:
     """Create a short synthetic video with colour changes."""
     path = Path(tmpdir) / "synthetic.mp4"
     cmd = [
-        "ffmpeg", "-y",
-        "-f", "lavfi", "-i",
+        "ffmpeg",
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
         "color=c=red:s=320x240:d=1.5",
-        "-f", "lavfi", "-i",
+        "-f",
+        "lavfi",
+        "-i",
         "color=c=blue:s=320x240:d=1.5",
         "-filter_complex",
         "[0:v][1:v]concat=n=2:v=1:a=0[out]",
-        "-map", "[out]",
-        "-c:v", "libx264", "-pix_fmt", "yuv420p",
+        "-map",
+        "[out]",
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
         str(path),
     ]
     subprocess.run(cmd, capture_output=True, timeout=30, check=True)
@@ -74,9 +83,7 @@ def _enriched_video() -> tuple:
 
 
 pytestmark = [
-    pytest.mark.skipif(
-        not _has_ffmpeg(), reason="ffmpeg/ffprobe not on PATH"
-    ),
+    pytest.mark.skipif(not _has_ffmpeg(), reason="ffmpeg/ffprobe not on PATH"),
 ]
 
 
@@ -90,9 +97,7 @@ def test_scene_count_matches_video():
         pipeline = Pipeline(provider=PySceneDetectProvider())
         scenes = pipeline.run(enriched)
 
-        assert 1 <= len(scenes) <= 20, (
-            f"Scene count {len(scenes)} outside [1, 20]"
-        )
+        assert 1 <= len(scenes) <= 20, f"Scene count {len(scenes)} outside [1, 20]"
     finally:
         if tmpdir is not None:
             shutil.rmtree(tmpdir, ignore_errors=True)
@@ -137,9 +142,7 @@ def test_entity_ids_are_deterministic():
                 )
             ).run(enriched)
 
-        scene_arts = Pipeline(
-            provider=PySceneDetectProvider()
-        ).run(enriched)
+        scene_arts = Pipeline(provider=PySceneDetectProvider()).run(enriched)
         all_artifacts = list(frame_arts) + list(scene_arts)
 
         builder = SceneGroupingBuilder()
@@ -148,33 +151,18 @@ def test_entity_ids_are_deterministic():
 
         assert len(entities_run1) == len(entities_run2)
 
-        for e1, e2 in zip(
-            entities_run1, entities_run2, strict=True
-        ):
+        for e1, e2 in zip(entities_run1, entities_run2, strict=True):
             assert e1.kind == e2.kind
             assert e1.builder == e2.builder
-            assert (
-                e1.metadata.get("scene_index")
-                == e2.metadata.get("scene_index")
-            )
-            assert (
-                e1.metadata.get("start_seconds")
-                == e2.metadata.get("start_seconds")
-            )
-            assert (
-                e1.metadata.get("end_seconds")
-                == e2.metadata.get("end_seconds")
-            )
+            assert e1.metadata.get("scene_index") == e2.metadata.get("scene_index")
+            assert e1.metadata.get("start_seconds") == e2.metadata.get("start_seconds")
+            assert e1.metadata.get("end_seconds") == e2.metadata.get("end_seconds")
             assert len(e1.parents) == len(e2.parents)
 
         issues1 = validate_entities(entities_run1)
         issues2 = validate_entities(entities_run2)
-        assert [
-            i for i in issues1 if i.severity == Severity.ERROR
-        ] == []
-        assert [
-            i for i in issues2 if i.severity == Severity.ERROR
-        ] == []
+        assert [i for i in issues1 if i.severity == Severity.ERROR] == []
+        assert [i for i in issues2 if i.severity == Severity.ERROR] == []
     finally:
         if tmpdir is not None:
             shutil.rmtree(tmpdir, ignore_errors=True)

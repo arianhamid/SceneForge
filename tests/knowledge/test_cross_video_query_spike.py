@@ -49,7 +49,7 @@ def library_store(tmp_path_factory):
         media_id = str(uuid4())
         # A deterministic-but-varied face count per movie so the
         # aggregation query below has real, checkable structure.
-        faces_per_scene = (movie_index % 5)  # 0..4 faces per scene
+        faces_per_scene = movie_index % 5  # 0..4 faces per scene
 
         dialogue_entities = [
             Entity(

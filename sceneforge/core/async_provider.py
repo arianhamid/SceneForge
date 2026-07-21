@@ -17,6 +17,7 @@ implementations of the same provider.
 from __future__ import annotations
 
 import asyncio
+import threading
 from typing import Any, Protocol, runtime_checkable
 
 from sceneforge.core.artifact import Artifact
@@ -47,10 +48,14 @@ class SyncProviderAdapter:
     """
     Wraps a synchronous Provider so it satisfies AsyncProvider.
 
-    Runs the synchronous `run()` in the default executor thread pool
-    so a slow, blocking, GPU-bound call doesn't stall the event loop
-    -- and therefore doesn't stall every other concurrent scene's
-    provider call in the same AsyncPipeline.run_many() batch.
+    Runs the synchronous `run()` in a worker thread so a slow, blocking,
+    GPU-bound call doesn't stall the event loop -- and therefore doesn't stall
+    every other concurrent scene's provider call in the same
+    `AsyncPipeline.run_many()` batch.
+
+    Completion is signaled with a `threading.Event` rather than an executor
+    future callback. Constrained runtimes can lose that callback's selector
+    wake-up even though the worker has finished, leaving the coroutine hung.
     """
 
     def __init__(self, provider: Provider) -> None:
@@ -69,5 +74,28 @@ class SyncProviderAdapter:
         return self._provider.capabilities
 
     async def run(self, media: Media) -> list[Artifact[Any]]:
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, self._provider.run, media)
+        completed = threading.Event()
+        result: list[list[Artifact[Any]]] = []
+        errors: list[BaseException] = []
+
+        def _run_provider() -> None:
+            try:
+                result.append(self._provider.run(media))
+            except BaseException as exc:
+                errors.append(exc)
+            finally:
+                completed.set()
+
+        worker = threading.Thread(
+            target=_run_provider,
+            name=f"sceneforge-{self._provider.name}",
+        )
+        worker.start()
+
+        while not completed.is_set():
+            await asyncio.sleep(0.01)
+
+        worker.join()
+        if errors:
+            raise errors[0]
+        return result[0]

@@ -29,12 +29,7 @@ def test_pipeline_image_workflow():
 def test_pipeline_video_workflow():
     """Test complete video processing workflow."""
     # Create media
-    video = VideoMedia(
-        name="movie.mp4",
-        duration=120.0,
-        codec="h264",
-        fps=30.0
-    )
+    video = VideoMedia(name="movie.mp4", duration=120.0, codec="h264", fps=30.0)
 
     # Create pipeline
     pipeline = Pipeline(provider=IdentityProvider())
@@ -50,12 +45,7 @@ def test_pipeline_video_workflow():
 def test_pipeline_audio_workflow():
     """Test complete audio processing workflow."""
     # Create media
-    audio = AudioMedia(
-        name="sound.wav",
-        duration=30.0,
-        sample_rate=44100,
-        channels=2
-    )
+    audio = AudioMedia(name="sound.wav", duration=30.0, sample_rate=44100, channels=2)
 
     # Create pipeline
     pipeline = Pipeline(provider=IdentityProvider())

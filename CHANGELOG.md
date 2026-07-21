@@ -7,7 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (AI-assisted development and contributor tooling)
+
+- Repository-wide `AGENTS.md` instructions and a human AI-assisted development
+  guide define architecture, safety, review, and verification expectations.
+- Reproducible `make` targets, EditorConfig defaults, and GitHub Actions jobs now
+  enforce formatting, linting, strict typing, Python 3.12 tests, and the existing
+  80% coverage threshold.
+- Dependabot configuration, a pull-request checklist, and thin Codex/Copilot
+  pointers keep tool-specific setup aligned with the repository contract.
+
+### Changed (Python compatibility)
+
+- Python 3.12 is now the sole supported feature release. Project metadata, Ruff,
+  mypy, CI, and setup documentation use the latest available 3.12 patch; Python
+  3.11 support is intentionally dropped (ADR-0023).
+
+### Fixed (async provider execution)
+
+- `SyncProviderAdapter` now uses an explicit worker thread and completion event.
+  This prevents completed synchronous provider calls from hanging when a runtime
+  loses the executor future's cross-thread event-loop wake-up, and allows the
+  complete suite to run under coverage without exclusions.
+
 ### Added (Persian educational documentation)
+
 - `docs/fa/` — a full Persian-language educational walkthrough of the
   project (10 files + index), written for someone learning both the
   architecture and the underlying Python patterns from zero: vision
@@ -23,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   correct at least six separate times).
 
 ### Added (Sprint 13: fifth real provider, second cross-domain confirmation)
+
 - `sceneforge.contrib.tesseract.TesseractOCRProvider`
   (`Capability.OCR`) — real Tesseract OCR, bundled language data (no
   network access needed, same shape as OpenCV's Haar cascades). The
@@ -46,6 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   test allowlist).
 
 ### Added (Sprint 12: first real Application; world-model vocabulary reconciled)
+
 - `sceneforge.applications.scene_summary.SceneSummary` — the first
   real Application: reads scene entities from a real `EntityStore`,
   renders a Markdown summary. Proves `docs/philosophy/VISION.md`'s own
@@ -72,6 +98,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   blocked-on-what.
 
 ### Fixed (Sprint 12)
+
 - `ArtifactCategory` existed with zero real consumers — every shipped
   artifact silently defaulted to `METADATA` regardless of what it
   actually represented. Set real categories on all five real artifact
@@ -81,6 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tests locking in the real values.
 
 ### Added (Sprint 11: cross-video querying, fourth confirmation)
+
 - `tests/knowledge/test_cross_video_query_spike.py`: a synthetic
   400-movie, 15-scenes-per-movie library (23,600 entities, 1,600 real
   `FileEntityStore` keys) exercising a genuine full-library
@@ -96,6 +124,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 4 new tests.
 
 ### Added (Sprint 10: cross-builder entity merging)
+
 - `sceneforge.knowledge.scene_merge_builder.SceneMergeBuilder` —
   combines `SceneGroupingBuilder` and `SceneFaceBuilder`'s separate
   per-scene entities into one, reusing the existing `RelationshipBuilder`
@@ -120,6 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 11 new tests (10 unit, 1 real integration).
 
 ### Added (Sprint 9: cross-domain Knowledge Builder + RFC closure)
+
 - `FaceDetectionArtifact.source_frame_path` — set automatically by
   `OpenCVFaceDetectionProvider` from the decoded image's own
   `metadata["source"]`. When that image is a video frame, this equals
@@ -144,6 +174,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   test, plus updated `FaceDetectionArtifact` coverage).
 
 ### Added (Sprint 8: fourth real provider, image domain)
+
 - `sceneforge.contrib.opencv`: `OpenCVFaceDetectionProvider`
   (`Capability.FACE_DETECTION`) using OpenCV's bundled Haar cascade
   classifier — no dependency injection needed, since the trained
@@ -164,6 +195,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `[[tool.mypy.overrides]]` for `cv2` (incomplete bundled stubs).
 
 ### Deliberately not done this sprint
+
 - A second Knowledge Builder consuming `FaceDetectionArtifact` output.
   Correlating a detected-face's `media_id` (belonging to a single
   still-frame `ImageMedia`) back to the `SceneEntity` it came from is a
@@ -174,6 +206,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Considered".
 
 ### Added (Sprint 7: relationship querying, measured)
+
 - `EntityStore.keys()` — a real, previously-missing enumeration
   capability. Before this, `EntityStore` could answer "is this exact
   key present" but not "what's in here at all"; the gap was found by
@@ -192,6 +225,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   relationships" section.
 
 ### Added (Sprint 6: entity relationships)
+
 - `EntityKind.RELATIONSHIP` and `sceneforge.knowledge.relationship_builder`:
   `RelationshipBuilder` Protocol (`relate(entities) -> list[Entity]`,
   deliberately distinct from `KnowledgeBuilder`'s `build(artifacts)`)
@@ -217,6 +251,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 12 new tests (10 unit, 2 integration).
 
 ### Added (Sprint 5: Entity persistence)
+
 - `sceneforge.knowledge.storage`: `EntityStore` Protocol,
   `FileEntityStore`, `InMemoryEntityStore`, `entity_build_key()`,
   `register_entity_type()` — resolving the Sprint 4 open question of
@@ -233,7 +268,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and rejected (a shared `Store[T]` generic; storing Entities inside
   `ArtifactStore` directly).
 - `examples/end_to_end/analyze_video.py` now caches all three layers
-  (frames, scenes, entities) and verifies cache-hit *value* equality
+  (frames, scenes, entities) and verifies cache-hit _value_ equality
   (not just a boolean flag) on a second run.
 - 13 new tests (`tests/knowledge/test_storage.py`) covering
   round-tripping, cache-key stability/independence-from-order/
@@ -241,6 +276,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cache-hit/cache-miss behavior.
 
 ### Added (Sprint 4: first Knowledge Builder)
+
 - `sceneforge.knowledge`: the framework's first Layer 4 (Knowledge
   Builders) implementation.
   - `Entity`/`EntityKind` — the Knowledge layer's immutable base type,
@@ -266,6 +302,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Builder step, verified by actually running it against a real video.
 
 ### Fixed (Sprint 4)
+
 - `examples/core/registry_basic.py` was genuinely broken — it
   referenced `ProviderRegistry`, `JoyCaptionProvider`, and
   `WhisperProvider`, none of which exist anywhere in the codebase, and
@@ -278,6 +315,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   explicitly.
 
 ### Added (Sprint 3: second and third real providers)
+
 - `sceneforge.contrib.scenedetect`: `PySceneDetectProvider`
   (`Capability.DETECT_SCENES`) — real content-aware cut detection via
   the `scenedetect` library, no model weights or network required.
@@ -306,6 +344,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `[[tool.mypy.overrides]]` for `scenedetect` (no bundled type stubs).
 
 ### Added (Sprint 2: architectural resilience)
+
 - `Media.evolve()`: sanctioned immutable path for turning placeholder
   metadata (from cheap loaders) into authoritative metadata, without
   ever mutating a `Media` instance in place
@@ -341,6 +380,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added comprehensive test coverage for registry and plugin lifecycle
 
 ### Changed
+
 - `provider_protocol.Provider` now declares the full structural
   contract (`name`, `version`, `capabilities`, `run`), not just `run()`
   — a `run()`-only class no longer satisfies `isinstance(x, Provider)`
@@ -351,6 +391,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated mypy configuration to target Python 3.11
 
 ### Removed
+
 - Removed unused `base_provider.py` file
 - Removed `register_capability_media()` / `register_default_capabilities()`
   module-level functions (superseded by `CapabilityRegistry`, ADR-0007)
@@ -359,6 +400,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   restatements of the same ideas) into `docs/philosophy/VISION.md`
 
 ### Fixed
+
 - Fixed Ruff linting error with `Mapping` import in `artifact.py`
 - Fixed mypy type errors with generic type parameters
 - `docs/specifications/ARTIFACT_SPEC.md`'s "Required Fields" list
@@ -375,6 +417,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2024-01-01
 
 ### Added
+
 - Initial release of SceneForge framework
 - Core artifact system with immutable dataclasses
 - Provider abstraction with capability system

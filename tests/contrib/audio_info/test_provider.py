@@ -23,12 +23,7 @@ def test_audio_info_provider_version():
 def test_audio_info_provider_returns_artifact():
     """AudioInfoProvider should return AudioInfoArtifact."""
     provider = AudioInfoProvider()
-    audio = AudioMedia(
-        name="sound.wav",
-        duration=30.0,
-        sample_rate=44100,
-        channels=2
-    )
+    audio = AudioMedia(name="sound.wav", duration=30.0, sample_rate=44100, channels=2)
 
     artifacts = provider.run(audio)
 
@@ -40,11 +35,7 @@ def test_audio_info_provider_extracts_metadata():
     """AudioInfoProvider should extract correct metadata."""
     provider = AudioInfoProvider()
     audio = AudioMedia(
-        name="sound.wav",
-        duration=30.0,
-        sample_rate=44100,
-        channels=2,
-        bit_depth=16
+        name="sound.wav", duration=30.0, sample_rate=44100, channels=2, bit_depth=16
     )
 
     artifacts = provider.run(audio)
@@ -79,12 +70,7 @@ def test_audio_info_provider_capabilities():
 def test_audio_info_provider_satisfies_contract():
     """AudioInfoProvider should satisfy provider contract."""
     provider = AudioInfoProvider()
-    audio = AudioMedia(
-        name="sound.wav",
-        duration=30.0,
-        sample_rate=44100,
-        channels=2
-    )
+    audio = AudioMedia(name="sound.wav", duration=30.0, sample_rate=44100, channels=2)
 
     # Should not raise
     provider_contract(provider, audio)

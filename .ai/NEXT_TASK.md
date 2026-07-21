@@ -17,6 +17,11 @@ objective is the first rung of that ladder that isn't built yet:
 **Facts**, which requires a provider that produces something above
 raw detection.
 
+Sprint 13 has since delivered real Tesseract OCR and `SceneTextBuilder`
+(ADR-0022). That work expands and organizes Evidence but does not interpret it
+into objective Facts, so the captioning/object-detection objective below remains
+unchanged.
+
 ---
 
 ## Completed (Sprints 1-12)

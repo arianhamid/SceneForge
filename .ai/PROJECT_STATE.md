@@ -1,158 +1,99 @@
 # Project State
 
-Live snapshot — update this when the state actually changes. See
+Live snapshot — update this when repository truth changes. See
 `.ai/NEXT_TASK.md` for the active, prioritized task list.
 
 ## Current Sprint
 
-Genesis Sprint 13: build the first real capability toward the "Facts"
-rung of the Understanding Ladder (ADR-0021) — a captioning or
-object-detection provider, the same disciplined pattern as every prior
-real provider.
+Genesis Sprint 13: build the first real capability toward the "Facts" rung of
+the Understanding Ladder (ADR-0021). OCR and scene-level text correlation are
+now real, but they remain organized Evidence; the next missing input is a real
+captioning or object-detection provider.
 
 ## Completed
 
-- Layers 0-3 (Media, Runtime, Providers, Artifacts) implemented and
-  tested (315+ tests, `ruff check` clean, `mypy --strict` clean across
-  79 source files).
-- Four real providers across two capability domains:
+- Layers 0-3 (Media, Runtime, Providers, Artifacts) are implemented and tested.
+- Five real feature providers span video/audio and image domains:
   `sceneforge.contrib.ffmpeg`, `sceneforge.contrib.scenedetect`,
-  `sceneforge.contrib.whisper` (video/audio), `sceneforge.contrib.opencv`
-  (image, ADR-0015).
-- **Layer 4, three real Knowledge Builders**: `SceneGroupingBuilder`
-  (ADR-0011), `SceneFaceBuilder` (cross-domain, ADR-0016),
-  `SceneMergeBuilder` (cross-builder merge, ADR-0018). Plus
-  `SceneSequenceBuilder` (ADR-0013).
-- **`EntityStore` measured sufficient four separate times**, at real
-  scale, for four differently-shaped questions: targeted lookup
-  (ADR-0014, 0.125s / 11,700 entities), cross-domain correlation
-  (ADR-0016), cross-builder merge (ADR-0018), and full-library
-  cross-video aggregation (ADR-0019, 0.391s / 23,600 entities / 400
-  movies). No index, backend, or graph library added — none of the
-  four measurements called for one.
-- Registry/Pipeline RFC closed (ADR-0017).
-- Runnable end-to-end example
-  (`examples/end_to_end/analyze_video.py`): full chain including
-  cross-domain face detection and cross-builder merging.
-- Documentation: `docs/philosophy/VISION.md`, `NAMING_CONVENTIONS.md`/
-  `STYLE_GUIDE.md`, ADRs 0006-0020, `docs/guides/ADDING_A_PROVIDER.md`,
-  corrected fictional content across several specs.
-- **Sprint 12 (first real Application):**
-  - `sceneforge/applications/scene_summary.py`: SceneSummary with
-    collect/render separation, using REAL entity metadata keys
-  - `sceneforge/contrib/media_hash/`: MediaHashProvider with stable
-    file-content hashing (SHA-256)
-  - `ArtifactCategory` enum (METADATA, ANALYSIS, DETECTION, RECOGNITION,
-    DERIVED, TRANSFORMATION)
-  - Typed `Provenance` dataclass on Entity (builder, source_artifact_ids,
-    confidence)
-  - Structured `ValidationIssue` with severity (WARNING/ERROR) and
-    entity_id
-  - Knowledge validation: orphan scenes, duplicate indices, self-refs,
-    timeline consistency
-  - Architecture tests enforcing real dependency graph (11 tests)
-  - Integration tests: full pipeline, evaluation metrics, dataset
-    validation
-  - ADR-0020: Stable API Surface documentation
-  - Builder dependency graph documented
+  `sceneforge.contrib.whisper`, `sceneforge.contrib.opencv`, and
+  `sceneforge.contrib.tesseract`. `MediaHashProvider` is also available as a
+  dependency-free utility provider.
+- Layer 4 has three Artifact-to-Entity builders: `SceneGroupingBuilder`,
+  `SceneFaceBuilder`, and `SceneTextBuilder`. `SceneSequenceBuilder` and
+  `SceneMergeBuilder` implement the separate Entity-to-Entity relationship
+  stage.
+- `EntityStore` persistence and plain-Python querying were measured sufficient
+  for targeted relationship lookup, cross-builder merging, and full-library
+  aggregation (ADRs 0012, 0014, 0018, and 0019).
+- `Entity.provenance`, structured knowledge validation, meaningful
+  `ArtifactCategory` values, and architecture import-rule tests are shipped.
+- `sceneforge.applications.SceneSummary` is the first real application. It reads
+  stored scene entities and renders a Markdown scene summary.
+- The runnable end-to-end example covers real frame extraction and scene
+  detection, knowledge construction, relationships, optional face detection,
+  cross-builder merging, and cache reuse.
+- The Registry/Pipeline runtime-wiring RFC is closed as unnecessary (ADR-0017).
+- ADRs through 0023 document the current architecture, provider decisions, and
+  Python compatibility baseline.
+- AI-assisted development now has repository-wide instructions, a human guide,
+  reproducible quality commands, Python 3.12 CI, dependency updates, and a
+  pull-request review checklist.
 
 ## Known Problems
 
-- Layers 5-7 (Knowledge Graph, Intelligence, Applications) do not
-  exist as dedicated infrastructure — but four consecutive real
-  measurements (ADR-0012, 0014, 0018, 0019) found no gap that would
-  require building them as such. `Entity` + `EntityStore` + plain
-  Python iteration has answered every real question asked of it so
-  far. This is evidence, not proof it'll hold forever.
-- `Pipeline` composition (chaining several providers into one ordered
-  flow) doesn't exist — a multi-step flow means one `Pipeline` per
-  provider, composed in application code.
-- `FileArtifactStore`/`FileEntityStore` are plain JSON-per-key
-  directories. Measured sufficient at real scale (ADR-0014, ADR-0019);
-  a real backend decision stays deferred until a measurement shows
-  it's needed.
-- `WhisperTranscribeProvider` has never run against real
-  `WhisperModel` weights in this environment (no Hugging Face Hub
-  access). Logic is fully unit-tested against a structurally-
-  compatible fake (ADR-0010); verify against real weights before
-  relying on it in production.
-- `OpenCVFaceDetectionProvider` has never run against a real face
-  photograph in this environment (no network access to fetch one).
-  Mechanics and the negative path are genuinely tested (ADR-0015);
-  verify against a real photo before relying on it in production.
-- `CAPTION`/`OCR`/`OBJECT_DETECTION` remain registered capabilities
-  with zero real implementations (`FACE_DETECTION` is now real).
-- **No Application exists yet.** Everything built through Sprint 11 is
-  infrastructure — real, tested, measured infrastructure, but nothing
-  a person would actually run to get something they want out of a
-  movie. This is Sprint 12's actual priority.
-- `ArtifactStore` (unlike `EntityStore` as of ADR-0014) still has no
-  `keys()`/enumeration method. Not needed by anything real yet.
+- No dedicated Knowledge Graph (Layer 5) or Intelligence engine (Layer 6)
+  exists. `Entity` + `EntityStore` + iteration have covered every measured query
+  so far; add infrastructure only when a real query demonstrates a gap.
+- `Pipeline` does not compose multiple providers into one ordered flow. Callers
+  compose one `Pipeline` per provider in application code.
+- `FileArtifactStore` and `FileEntityStore` are JSON-per-key directories. A
+  different backend remains deferred until measurement justifies it.
+- `WhisperTranscribeProvider` has not been verified here against downloaded real
+  model weights. Its boundary logic is unit-tested with a structural fake.
+- `OpenCVFaceDetectionProvider` has not been positively verified here against a
+  real face photograph. Its mechanics and negative path are tested.
+- `CAPTION` and `OBJECT_DETECTION` remain registered capabilities without real
+  implementations. OCR is real, but OCR output alone does not constitute Facts.
+- `ArtifactStore` has no enumeration method equivalent to `EntityStore.keys()`;
+  no real artifact-query caller has required it yet.
 
 ## Architectural Decisions
 
-See `docs/adr/`. Notable ones, most recent first:
+See `docs/adr/`. The most recent decisions are:
 
-- ADR-0019: Cross-video aggregation (a full-library scan, not a
-  targeted lookup) also needs no new infrastructure — measured
-  (0.391s / 23,600 entities / 400 movies). Fourth consecutive
-  confirmation, deliberately tested with a differently-shaped question
-  than the prior three specifically to make the result meaningful.
-- ADR-0018: Cross-builder entity merging reuses `RelationshipBuilder`
-  — no new persistence concept needed.
-- ADR-0017: `Registry`/`Pipeline` wiring closed as unnecessary after
-  six sprints with zero real callers needing runtime provider
-  selection.
-- ADR-0016: Cross-domain Knowledge Builders correlate via an Artifact
-  field the provider already carries (`source_frame_path`), not a new
-  builder Protocol.
-- ADR-0015: Face detection ships real with no dependency injection
-  needed (bundled Haar cascade weights) — refines ADR-0010. Also
-  closed a real gap: `ImageMedia` had no enricher since Sprint 1.
-- ADR-0014: Relationship querying (targeted lookup) doesn't need new
-  infrastructure — measured (0.125s / 11,700 entities). Also added
-  `EntityStore.keys()`, a real, previously-missing capability.
-- ADR-0013: Entity relationships reuse the `Entity` shape for
-  representation, but need a separate `RelationshipBuilder` Protocol
-  from `KnowledgeBuilder`.
-- ADR-0012: Entity persistence is a separate `EntityStore`, not a
-  shared generic with `ArtifactStore`.
-- ADR-0011: The first Knowledge Builder groups by time overlap only.
-- ADR-0010: Model-backed providers needing *downloaded* weights take
-  the model as a constructor argument (dependency injection). ADR-0015
-  refined this: providers with *bundled* weights don't need it.
-- ADR-0009 through ADR-0006: async providers, artifact persistence,
-  injectable capability registry, complete Provider Protocol contract.
+- ADR-0023: Python 3.12 is the sole supported feature release so local tooling,
+  typing, and CI share one verified baseline while patch releases remain floating.
+- ADR-0022: Tesseract provides real OCR and confirms frame-path correlation for
+  a second cross-domain builder, while remaining at the Evidence rung.
+- ADR-0021: the Understanding Ladder supplies vocabulary and explicit triggers;
+  higher rungs are not built ahead of real inputs.
+- ADR-0020: the stable public API surface is documented.
+- ADR-0019: full-library aggregation remains fast enough with store enumeration
+  and Python filtering at the measured scale.
+- ADR-0018: cross-builder scene merging reuses `RelationshipBuilder`.
+- ADR-0017: runtime provider Registry/Pipeline wiring is closed as unnecessary.
+- ADR-0016: cross-domain builders correlate per-frame results through
+  `source_frame_path` rather than a new protocol.
+- ADR-0015: bundled model data does not require model injection; downloaded
+  weights still follow ADR-0010's injected-model pattern.
 
 ## Open RFCs
 
-- What does `Media.evolve()` mean for cache invalidation across
-  multiple enrichers? Still open, still low priority — the only
-  carried-over open question left.
-- Cross-video querying, cross-builder merging, Registry/Pipeline
-  wiring — all **closed**, see ADR-0019, ADR-0018, ADR-0017
-  respectively. Listed here only as a record of resolution.
+- What should `Media.evolve()` mean for cache invalidation across multiple
+  enrichers? This remains open and low priority.
+
+Cross-builder merging, cross-video querying, and runtime provider wiring are
+closed decisions, not open RFCs (ADRs 0018, 0019, and 0017 respectively).
 
 ## Future Ideas
 
-- A CLI (`sceneforge run <file> --providers frame_extraction,detect_scenes,face_detection`)
-  now that there are four real providers worth chaining.
-- A SQLite-backed `ArtifactStore`/`EntityStore` (or a real graph
-  library) if a future measurement ever shows linear scan isn't
-  enough — four measurements running (ADR-0014, 0018, 0019) have found
-  it currently is.
-- A DNN-based face detector (better accuracy than Haar cascades) using
-  ADR-0010's injection pattern, once accuracy actually matters for a
-  real use case.
-- Extend `ArtifactStore` with `keys()` to match `EntityStore`
-  (ADR-0014) if a real query need for artifacts ever arises.
-- A third capability domain provider (`CAPTION`/`OCR`), only once the
-  first real Application (Sprint 12) creates a concrete need for
-  richer entity content — not added speculatively.
+- A CLI once provider composition has a concrete user workflow.
+- SQLite or graph-backed stores if measured queries outgrow current storage.
+- A DNN-based face detector if real accuracy requirements justify it.
+- `ArtifactStore.keys()` when a real artifact-enumeration use case appears.
 
 ## Immediate Goal
 
-Build the first real Application: a script that takes a real processed
-video's `Entity` data and produces genuinely useful output — proving
-`docs/philosophy/VISION.md`'s own success definition for the first
-time, not just the infrastructure underneath it.
+Build a real captioning or object-detection provider, then a minimal builder that
+turns its output into objective Fact entities. Keep Events, State, Intentions,
+Narrative, and Themes deferred until the lower rungs exist.

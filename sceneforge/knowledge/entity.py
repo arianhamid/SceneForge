@@ -21,10 +21,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Any, Generic, TypeVar
+from typing import Any
 from uuid import UUID, uuid4
-
-T = TypeVar("T")
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,7 +48,7 @@ class EntityKind(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
-class Entity(Generic[T]):
+class Entity[T]:
     """
     Immutable base class for every SceneForge knowledge entity.
 

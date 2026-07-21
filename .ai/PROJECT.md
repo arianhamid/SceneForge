@@ -18,14 +18,18 @@ Create the world's most extensible framework for understanding visual stories.
 
 ## Current Phase
 
-Genesis (Sprint 3)
+Genesis (Sprint 13)
 
-The core abstractions (Media, Artifact, Provider, Pipeline,
-CapabilityRegistry, ArtifactStore) are stable enough that three real,
-non-stub providers now run against them successfully — see
-`.ai/PROJECT_STATE.md` for the live snapshot. Provider-specific logic
-still lives entirely in `sceneforge.contrib`, never in core; that rule
-held throughout Sprint 2 and 3 and should keep holding.
+Layers 0-4 are implemented: core media/runtime/artifact contracts, five real
+feature providers across video/audio and image domains, persistence, three real
+Artifact-to-Entity builders, and relationship construction. The first real
+Application (`SceneSummary`) is also shipped. The next grounded step is a real
+captioning or object-detection input for the Facts rung; see
+`.ai/PROJECT_STATE.md` for the live snapshot and `.ai/NEXT_TASK.md` for the
+active work.
+
+Provider-specific logic lives in `sceneforge.contrib`, never in core. That
+boundary remains mandatory.
 
 ---
 

@@ -40,7 +40,7 @@ ALLOWED_KNOWLEDGE_CONTRIB_IMPORTS: frozenset[str] = frozenset(
     }
 )
 
-# Standard library modules (Python 3.11+)
+# Standard library modules (Python 3.12)
 STDLIB_MODULES: frozenset[str] = frozenset(sys.stdlib_module_names)
 
 
@@ -177,9 +177,8 @@ class TestMediaMustNotImportCore:
                 if _is_core_import(module):
                     violations.append((filepath, module))
 
-        assert not violations, (
-            "media must not import core. Violations:\n"
-            + "\n".join(f"  {f}: {m}" for f, m in violations)
+        assert not violations, "media must not import core. Violations:\n" + "\n".join(
+            f"  {f}: {m}" for f, m in violations
         )
 
 
@@ -296,9 +295,8 @@ class TestCoreStdlibOnly:
                 if top_level not in STDLIB_MODULES:
                     violations.append((filepath, module))
 
-        assert not violations, (
-            "core must only use stdlib. Violations:\n"
-            + "\n".join(f"  {f}: {m}" for f, m in violations)
+        assert not violations, "core must only use stdlib. Violations:\n" + "\n".join(
+            f"  {f}: {m}" for f, m in violations
         )
 
 
@@ -313,17 +311,17 @@ class TestKnownDependencies:
         """core/pipeline.py imports ProcessingContext from runtime (ADR-backed)."""
         filepath = PROJECT_ROOT / "sceneforge/core/pipeline.py"
         imports = _extract_imports(filepath)
-        assert any(
-            "sceneforge.runtime.processing_context" in m for m in imports
-        ), "core/pipeline.py should import ProcessingContext from runtime"
+        assert any("sceneforge.runtime.processing_context" in m for m in imports), (
+            "core/pipeline.py should import ProcessingContext from runtime"
+        )
 
     def test_core_async_pipeline_imports_runtime(self) -> None:
         """core/async_pipeline.py imports ProcessingContext from runtime."""
         filepath = PROJECT_ROOT / "sceneforge/core/async_pipeline.py"
         imports = _extract_imports(filepath)
-        assert any(
-            "sceneforge.runtime.processing_context" in m for m in imports
-        ), "core/async_pipeline.py should import ProcessingContext from runtime"
+        assert any("sceneforge.runtime.processing_context" in m for m in imports), (
+            "core/async_pipeline.py should import ProcessingContext from runtime"
+        )
 
     def test_knowledge_imports_contrib_artifacts(self) -> None:
         """knowledge builders import contrib artifact types for isinstance() checks."""

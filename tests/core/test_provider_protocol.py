@@ -1,3 +1,5 @@
+from typing import Protocol
+
 from sceneforge.core.artifact import Artifact
 from sceneforge.core.capability import Capability
 from sceneforge.core.provider_protocol import Provider
@@ -5,7 +7,7 @@ from sceneforge.media.base import Media
 
 
 def test_provider_is_protocol():
-    assert hasattr(Provider, "__protocol_attrs__")
+    assert issubclass(Provider, Protocol)
 
 
 def test_provider_has_run_method():

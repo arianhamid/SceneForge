@@ -41,6 +41,13 @@ The following APIs are experimental. Breaking changes may occur.
 - All public APIs are documented
 - Tests cover all public behavior
 
+## Python Runtime
+
+SceneForge supports the latest patch release in the Python 3.12 feature series
+(`>=3.12,<3.13`). Python 3.11 and 3.13 are outside the supported range. CI,
+linting, and type checking use Python 3.12; see
+[ADR-0023](adr/0023-python-3-12-baseline.md).
+
 ## Versioning
 
 - Major version: Breaking changes to Stable APIs

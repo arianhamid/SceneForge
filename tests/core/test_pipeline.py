@@ -31,9 +31,7 @@ class EchoProvider(Provider):
 
     def run(self, media: Media):
         """Process media and return artifacts."""
-        return [
-            Artifact(kind=ArtifactKind.ARTIFACT, provider=self.name)
-        ]
+        return [Artifact(kind=ArtifactKind.ARTIFACT, provider=self.name)]
 
 
 class IdentityProvider:
@@ -53,9 +51,7 @@ class IdentityProvider:
 
     def run(self, media):
         """Process media and return artifacts."""
-        return [
-            Artifact(kind=ArtifactKind.ARTIFACT, provider=self.name)
-        ]
+        return [Artifact(kind=ArtifactKind.ARTIFACT, provider=self.name)]
 
 
 class EmptyProvider:
@@ -130,6 +126,7 @@ def test_pipeline_structural_provider():
 
 def test_pipeline_rejects_incompatible_media():
     """Pipeline should reject media incompatible with provider capabilities."""
+
     # ImageProvider that only works with images
     class ImageProvider(Provider):
         @property
@@ -148,12 +145,7 @@ def test_pipeline_rejects_incompatible_media():
             return [Artifact(kind=ArtifactKind.CAPTION, provider=self.name)]
 
     # AudioMedia should be rejected by ImageProvider
-    audio = AudioMedia(
-        name="sound.wav",
-        duration=30.0,
-        sample_rate=44100,
-        channels=2
-    )
+    audio = AudioMedia(name="sound.wav", duration=30.0, sample_rate=44100, channels=2)
 
     pipeline = Pipeline(provider=ImageProvider())
 
@@ -166,6 +158,7 @@ def test_pipeline_rejects_incompatible_media():
 
 def test_pipeline_accepts_compatible_media():
     """Pipeline should accept media compatible with provider capabilities."""
+
     # ImageProvider that only works with images
     class ImageProvider(Provider):
         @property
@@ -195,6 +188,7 @@ def test_pipeline_accepts_compatible_media():
 
 def test_pipeline_no_capabilities_accepts_all():
     """Pipeline should accept all media when provider has no capabilities."""
+
     # Provider with no capabilities
     class GenericProvider(Provider):
         @property
@@ -213,12 +207,7 @@ def test_pipeline_no_capabilities_accepts_all():
             return [Artifact(kind=ArtifactKind.ARTIFACT, provider=self.name)]
 
     # Any media should be accepted
-    audio = AudioMedia(
-        name="sound.wav",
-        duration=30.0,
-        sample_rate=44100,
-        channels=2
-    )
+    audio = AudioMedia(name="sound.wav", duration=30.0, sample_rate=44100, channels=2)
 
     pipeline = Pipeline(provider=GenericProvider())
     result = pipeline.run(audio)

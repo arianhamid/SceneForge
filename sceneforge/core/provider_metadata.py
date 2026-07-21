@@ -5,7 +5,6 @@ from sceneforge.core.capability import Capability
 
 @dataclass(frozen=True, slots=True)
 class ProviderMetadata:
-
     name: str
 
     version: str

@@ -5,7 +5,7 @@ from sceneforge.runtime.media_runtime import Decoder
 
 def test_decoder_is_protocol():
     """Decoder should be a Protocol."""
-    assert hasattr(Decoder, 'decode')
+    assert hasattr(Decoder, "decode")
 
 
 def test_decoder_is_runtime_checkable():

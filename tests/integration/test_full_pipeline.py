@@ -38,15 +38,24 @@ def _make_synthetic_video(tmpdir: str | Path) -> Path:
     """Create a short synthetic video with colour changes."""
     path = Path(tmpdir) / "synthetic.mp4"
     cmd = [
-        "ffmpeg", "-y",
-        "-f", "lavfi", "-i",
+        "ffmpeg",
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
         "color=c=red:s=320x240:d=1.5",
-        "-f", "lavfi", "-i",
+        "-f",
+        "lavfi",
+        "-i",
         "color=c=blue:s=320x240:d=1.5",
         "-filter_complex",
         "[0:v][1:v]concat=n=2:v=1:a=0[out]",
-        "-map", "[out]",
-        "-c:v", "libx264", "-pix_fmt", "yuv420p",
+        "-map",
+        "[out]",
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
         str(path),
     ]
     subprocess.run(cmd, capture_output=True, timeout=30, check=True)
@@ -70,9 +79,7 @@ def _try_load_video() -> tuple[Path, Path | None]:
 
 # Skip if ffmpeg/ffprobe are not available at all
 pytestmark = [
-    pytest.mark.skipif(
-        not _has_ffmpeg(), reason="ffmpeg/ffprobe not on PATH"
-    ),
+    pytest.mark.skipif(not _has_ffmpeg(), reason="ffmpeg/ffprobe not on PATH"),
 ]
 
 
@@ -129,9 +136,7 @@ def test_full_pipeline_video_to_summary():
 
         # Step 7: Store entities and generate summary
         store = InMemoryEntityStore()
-        key = entity_build_key(
-            all_artifacts, builder.name, builder.version
-        )
+        key = entity_build_key(all_artifacts, builder.name, builder.version)
         store.put(key, entities)
 
         summary = SceneSummary(store)
@@ -161,9 +166,7 @@ def test_pipeline_returns_correct_artifact_types():
             )
             frame_arts = frame_pipeline.run(enriched)
 
-        scene_pipeline = Pipeline(
-            provider=PySceneDetectProvider()
-        )
+        scene_pipeline = Pipeline(provider=PySceneDetectProvider())
         scene_arts = scene_pipeline.run(enriched)
 
         for art in frame_arts:

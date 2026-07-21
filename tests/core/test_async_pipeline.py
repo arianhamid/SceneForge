@@ -7,6 +7,7 @@ since this repo's test suite otherwise only needs pytest itself.
 """
 
 import asyncio
+import threading
 
 import pytest
 
@@ -180,7 +181,10 @@ def test_async_pipeline_run_many_isolates_failures():
     assert len(batch.failures) == 1
 
 
-def test_sync_provider_adapter_runs_in_executor():
+def test_sync_provider_adapter_runs_in_worker_thread():
+    main_thread_id = threading.get_ident()
+    provider_thread_ids = []
+
     class SyncProvider:
         @property
         def name(self):
@@ -195,6 +199,7 @@ def test_sync_provider_adapter_runs_in_executor():
             return frozenset()
 
         def run(self, media):
+            provider_thread_ids.append(threading.get_ident())
             return [Artifact(provider=self.name)]
 
     async def _run():
@@ -205,3 +210,30 @@ def test_sync_provider_adapter_runs_in_executor():
     result = asyncio.run(_run())
     assert len(result) == 1
     assert result[0].provider == "sync-wrapped"
+    assert len(provider_thread_ids) == 1
+    assert provider_thread_ids[0] != main_thread_id
+
+
+def test_sync_provider_adapter_propagates_worker_error():
+    class BrokenSyncProvider:
+        @property
+        def name(self):
+            return "broken-sync"
+
+        @property
+        def version(self):
+            return "1.0.0"
+
+        @property
+        def capabilities(self):
+            return frozenset()
+
+        def run(self, media):
+            raise RuntimeError("worker failed")
+
+    async def _run():
+        adapter = SyncProviderAdapter(BrokenSyncProvider())
+        return await adapter.run(_image())
+
+    with pytest.raises(RuntimeError, match="worker failed"):
+        asyncio.run(_run())

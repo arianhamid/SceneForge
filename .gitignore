@@ -1,16 +1,8 @@
-# Python
+# Python bytecode and binary artifacts
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-*.egg
-*.egg-info/
-dist/
-build/
-eggs/
-*.whl
-pip-log.txt
-pip-delete-this-directory.txt
 
 # Virtual environments
 .venv/
@@ -18,38 +10,54 @@ venv/
 ENV/
 env/
 
-# AI
+# Build and package output
+build/
+dist/
+eggs/
+*.egg
+*.egg-info/
+*.whl
+*.tar.gz
+*.zip
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Testing and quality tools
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# SceneForge runtime output
+.sceneforge_cache/
+.sceneforge_frames/
+.sceneforge_entities/
+cache/
+
+# Local configuration and secrets
+.env
+.env.*
+*.env
+!.env.example
+
+# AI tool state
 /.claude
 
-# IDE
+# Editors and operating systems
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.mypy_cache/
-
-# OS
 .DS_Store
 Thumbs.db
-
-# Environment
-.env
-.env.local
-*.env
-
-# Jupyter
 .ipynb_checkpoints/
 
-# Distribution
-*.tar.gz
-*.zip
-
-# Compose
+# Local composition/planning tools
 .mimocode/
 docs/compose/plans/

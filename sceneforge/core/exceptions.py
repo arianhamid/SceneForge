@@ -104,9 +104,7 @@ class ProviderTimeoutError(SceneForgeError):
     def __init__(self, provider: str, timeout_seconds: float) -> None:
         self.provider = provider
         self.timeout_seconds = timeout_seconds
-        super().__init__(
-            f"Provider '{provider}' timed out after {timeout_seconds}s"
-        )
+        super().__init__(f"Provider '{provider}' timed out after {timeout_seconds}s")
 
 
 class EnrichmentError(SceneForgeError):

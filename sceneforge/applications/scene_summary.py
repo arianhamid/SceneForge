@@ -73,9 +73,7 @@ class SceneSummary:
                     start_seconds=meta.get("start_seconds", 0.0),
                     end_seconds=meta.get("end_seconds", 0.0),
                     frame_count=len(meta.get("frame_paths", [])),
-                    transcript_segment_count=meta.get(
-                        "transcript_segment_count", 0
-                    ),
+                    transcript_segment_count=meta.get("transcript_segment_count", 0),
                     dialogue=entity.payload,
                 )
             )
@@ -106,9 +104,7 @@ class SceneSummary:
                 f"- **Time**: {scene.start_seconds:.2f}s – {scene.end_seconds:.2f}s"
             )
             lines.append(f"- **Frames**: {scene.frame_count}")
-            lines.append(
-                f"- **Transcript segments**: {scene.transcript_segment_count}"
-            )
+            lines.append(f"- **Transcript segments**: {scene.transcript_segment_count}")
             if scene.dialogue:
                 lines.append("")
                 lines.append(f"> {scene.dialogue}")

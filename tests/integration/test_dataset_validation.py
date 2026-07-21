@@ -41,15 +41,24 @@ def _make_synthetic_video(tmpdir: str | Path) -> Path:
     """Create a short synthetic video with colour changes."""
     path = Path(tmpdir) / "synthetic.mp4"
     cmd = [
-        "ffmpeg", "-y",
-        "-f", "lavfi", "-i",
+        "ffmpeg",
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
         "color=c=red:s=320x240:d=1.5",
-        "-f", "lavfi", "-i",
+        "-f",
+        "lavfi",
+        "-i",
         "color=c=blue:s=320x240:d=1.5",
         "-filter_complex",
         "[0:v][1:v]concat=n=2:v=1:a=0[out]",
-        "-map", "[out]",
-        "-c:v", "libx264", "-pix_fmt", "yuv420p",
+        "-map",
+        "[out]",
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
         str(path),
     ]
     subprocess.run(cmd, capture_output=True, timeout=30, check=True)
@@ -72,9 +81,7 @@ def _try_load_video() -> tuple[Path, str | None]:
 
 
 pytestmark = [
-    pytest.mark.skipif(
-        not _has_ffmpeg(), reason="ffmpeg/ffprobe not on PATH"
-    ),
+    pytest.mark.skipif(not _has_ffmpeg(), reason="ffmpeg/ffprobe not on PATH"),
 ]
 
 
@@ -93,9 +100,7 @@ def test_short_video_produces_valid_output():
         assert enriched.metadata.get("probed") is True
         width = enriched.metadata.get("width", 0)
         height = enriched.metadata.get("height", 0)
-        assert width > 0 and height > 0, (
-            f"Expected dimensions, got {width}x{height}"
-        )
+        assert width > 0 and height > 0, f"Expected dimensions, got {width}x{height}"
 
         # Extract frames
         with tempfile.TemporaryDirectory() as frame_tmpdir:
@@ -110,9 +115,7 @@ def test_short_video_produces_valid_output():
                 assert art.frame_path.endswith(".png")
 
         # Detect scenes
-        scene_artifacts = Pipeline(
-            provider=PySceneDetectProvider()
-        ).run(enriched)
+        scene_artifacts = Pipeline(provider=PySceneDetectProvider()).run(enriched)
         assert len(scene_artifacts) >= 1
         for art in scene_artifacts:
             assert art.start_seconds >= 0
@@ -121,9 +124,7 @@ def test_short_video_produces_valid_output():
             )
 
         # Group into entities
-        all_artifacts = list(frame_artifacts) + list(
-            scene_artifacts
-        )
+        all_artifacts = list(frame_artifacts) + list(scene_artifacts)
         entities = SceneGroupingBuilder().build(all_artifacts)
         assert len(entities) >= 1
 
@@ -143,9 +144,7 @@ def test_short_video_produces_valid_output():
 
         # Store and round-trip
         store = InMemoryEntityStore()
-        key = entity_build_key(
-            all_artifacts, "scene_grouping", "1.0.0"
-        )
+        key = entity_build_key(all_artifacts, "scene_grouping", "1.0.0")
         store.put(key, entities)
         retrieved = store.get(key)
         assert retrieved is not None

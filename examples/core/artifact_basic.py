@@ -5,9 +5,6 @@ class CaptionArtifact(Artifact):
     pass
 
 
-artifact = CaptionArtifact(
-    provider="joycaption",
-    payload="A man walks into a room."
-)
+artifact = CaptionArtifact(provider="joycaption", payload="A man walks into a room.")
 
 print(artifact)

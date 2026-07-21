@@ -62,9 +62,7 @@ def _fake_entry_point(loadable):
 def test_discover_plugins_instantiates_class_entry_points():
     entry_point = _fake_entry_point(DiscoverablePlugin)
 
-    with patch(
-        "sceneforge.plugins.registry.entry_points", return_value=[entry_point]
-    ):
+    with patch("sceneforge.plugins.registry.entry_points", return_value=[entry_point]):
         plugins = discover_plugins()
 
     assert len(plugins) == 1
@@ -75,9 +73,7 @@ def test_discover_plugins_accepts_instance_entry_points():
     instance = DiscoverablePlugin()
     entry_point = _fake_entry_point(instance)
 
-    with patch(
-        "sceneforge.plugins.registry.entry_points", return_value=[entry_point]
-    ):
+    with patch("sceneforge.plugins.registry.entry_points", return_value=[entry_point]):
         plugins = discover_plugins()
 
     assert plugins == [instance]
@@ -88,9 +84,7 @@ def test_discover_plugins_skips_broken_entry_points():
     broken.load.side_effect = ImportError("missing dependency")
     good = _fake_entry_point(DiscoverablePlugin)
 
-    with patch(
-        "sceneforge.plugins.registry.entry_points", return_value=[broken, good]
-    ):
+    with patch("sceneforge.plugins.registry.entry_points", return_value=[broken, good]):
         plugins = discover_plugins()
 
     assert len(plugins) == 1
@@ -99,9 +93,7 @@ def test_discover_plugins_skips_broken_entry_points():
 def test_discover_plugins_skips_non_plugin_objects():
     entry_point = _fake_entry_point(object())
 
-    with patch(
-        "sceneforge.plugins.registry.entry_points", return_value=[entry_point]
-    ):
+    with patch("sceneforge.plugins.registry.entry_points", return_value=[entry_point]):
         plugins = discover_plugins()
 
     assert plugins == []
@@ -111,9 +103,7 @@ def test_registry_discover_registers_new_plugins():
     registry = PluginRegistry()
     entry_point = _fake_entry_point(DiscoverablePlugin)
 
-    with patch(
-        "sceneforge.plugins.registry.entry_points", return_value=[entry_point]
-    ):
+    with patch("sceneforge.plugins.registry.entry_points", return_value=[entry_point]):
         newly_registered = registry.discover()
 
     assert len(newly_registered) == 1
@@ -125,9 +115,7 @@ def test_registry_discover_is_idempotent():
     registry = PluginRegistry()
     entry_point = _fake_entry_point(DiscoverablePlugin)
 
-    with patch(
-        "sceneforge.plugins.registry.entry_points", return_value=[entry_point]
-    ):
+    with patch("sceneforge.plugins.registry.entry_points", return_value=[entry_point]):
         registry.discover()
         second_pass = registry.discover()
 

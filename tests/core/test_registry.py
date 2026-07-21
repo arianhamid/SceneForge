@@ -10,7 +10,6 @@ from sceneforge.core.registry import Registry
 
 
 class DummyProvider(Provider):
-
     @property
     def name(self):
         return "dummy"

@@ -86,6 +86,78 @@ The complete set of entities and relationships.
 
 Acts as the central understanding of a movie.
 
+No dedicated `WorldModel`/graph-database type exists for this yet —
+`Entity` + `EntityStore` + `iter_all_entities()`/`find_related()` have
+been measured sufficient for every real query asked of them so far
+(targeted lookup, cross-domain correlation, cross-builder merge,
+full-library aggregation — see ADR-0012, 0014, 0018, 0019). See
+`docs/adr/0021-world-model-vocabulary.md` for the trigger condition
+that would justify building one.
+
+---
+
+# The Understanding Ladder
+
+A finer-grained vocabulary for "how raw video becomes understanding,"
+adopted from a vision document proposing SceneForge model movies the
+way people remember them — not as pixels, but as evidence resolving
+into an increasingly complete, provenance-tracked picture. See
+`docs/adr/0021-world-model-vocabulary.md` for the full reasoning.
+Each rung is marked with what's real today and what would need to
+exist first to build the next one for real.
+
+**Evidence** — everything directly observable: frame, scene cut,
+transcript segment, detected face. *Maps to `Artifact`. Real, four
+providers deep (`sceneforge.contrib.ffmpeg/scenedetect/whisper/opencv`).*
+
+**Facts** — evidence converted into objective, higher-level statements
+("character speaks", "door opens"). *Not built. Blocked on a provider
+that produces something above raw detection — `CAPTION` or
+`OBJECT_DETECTION`, both registered capabilities with no real
+implementation yet.*
+
+**Entities** — persistent objects that survive across scenes (a
+character, a location) and accumulate evidence over time. *Partially
+real: `Entity` exists and `EntityKind.CHARACTER`/`LOCATION` are
+forward-declared in the enum, but nothing yet re-identifies "the same
+character" across non-adjacent scenes — that needs a real recognition/
+embedding provider, which doesn't exist yet. `SceneEntity` (via
+`SceneGroupingBuilder`/`SceneFaceBuilder`) is real today.*
+
+**Events** — structured compositions of Facts ("John enters room").
+*Not built. Blocked on Facts existing first.*
+
+**State** — how entities change over time ("door: closed → opened →
+destroyed"). *Not built. Blocked on Events existing first.*
+
+**Relationships** — typed, evolving connections between entities
+(friend, suspects, protects — not just "connected"). *Partially real:
+`EntityKind.RELATIONSHIP` + `RelationshipBuilder` exist
+(`SceneSequenceBuilder` for scene ordering, `SceneMergeBuilder` for
+same-scene merging) but nothing yet represents entity-to-entity social/
+narrative relationships, which need Entities (characters) to exist
+first.*
+
+**Intentions** — inferred, not extracted ("John wants money"). *Not
+built. Requires an LLM-reasoning step over a populated graph that
+doesn't have Facts or Events yet to reason over.*
+
+**Narrative** — story structure (setup, rising action, climax).
+*Not built, same blocker as Intentions.*
+
+**Themes** — the highest level (redemption, corruption, identity).
+*Not built, same blocker. The vision document's own words: "These
+should never affect lower layers" — a constraint worth keeping
+whenever this layer is eventually built, so a theme inference can
+never quietly reshape what a lower layer claims it observed.*
+
+**Provenance** — every fact remembers why the system believes it,
+and evidence is never deleted, only superseded by new evidence with
+its own provenance. *Real today: `Entity.provenance` (`Provenance`
+dataclass: builder, source_artifact_ids, confidence), and structurally
+true throughout — `Artifact`/`Entity` are immutable and `parents`
+always traces a conclusion back to what produced it.*
+
 ---
 
 # Intelligence
@@ -105,6 +177,10 @@ Foreshadowing
 Narrative Pace
 
 Symbolism
+
+Roughly corresponds to the Understanding Ladder's Intentions/
+Narrative/Themes rungs above — kept here as the original, coarser
+term; the ladder is the more precise vocabulary going forward.
 
 ---
 

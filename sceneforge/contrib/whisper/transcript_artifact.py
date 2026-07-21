@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from uuid import UUID, uuid4
 
-from sceneforge.core.artifact import Artifact, ArtifactKind
+from sceneforge.core.artifact import Artifact, ArtifactCategory, ArtifactKind
 from sceneforge.core.storage import register_artifact_type
 
 
@@ -24,4 +24,5 @@ class TranscriptSegmentArtifact(Artifact[str]):
     end_seconds: float = 0.0
     language: str = "unknown"
     kind: ArtifactKind = ArtifactKind.TRANSCRIPT
+    category: ArtifactCategory = ArtifactCategory.ANALYSIS
     provider: str = "whisper_transcribe"

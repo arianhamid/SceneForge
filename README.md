@@ -323,6 +323,9 @@ that file is the one kept current.
 
 ## Documentation
 
+- [مستندات فارسی (Persian Documentation)](docs/fa/README.md) — a full
+  educational walkthrough of the project in Persian, written for
+  learning the architecture and the Python patterns used, from zero
 - [Architecture Overview](docs/architecture/OVERVIEW.md)
 - [Domain Model](docs/architecture/DOMAIN_MODEL.md)
 - [Layered Architecture](docs/architecture/LAYERS.md)

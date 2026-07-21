@@ -18,6 +18,9 @@ venv/
 ENV/
 env/
 
+# AI
+/.claude
+
 # IDE
 .vscode/
 .idea/

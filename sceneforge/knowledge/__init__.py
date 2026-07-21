@@ -13,7 +13,10 @@ detection) -- see docs/adr/0016-cross-domain-knowledge-builder.md.
 `SceneMergeBuilder` combines multiple builders' output for the same
 scene into one entity, using the existing `RelationshipBuilder` shape
 rather than a new persistence concept -- see
-docs/adr/0018-scene-merge-builder.md.
+docs/adr/0018-scene-merge-builder.md. `SceneTextBuilder` confirms the
+same cross-domain correlation pattern (source_frame_path matching)
+holds for a second real capability (OCR) -- see
+docs/adr/0022-real-ocr-provider.md.
 """
 
 from sceneforge.knowledge.builder import KnowledgeBuilder, build_with_cache
@@ -26,6 +29,7 @@ from sceneforge.knowledge.relationship_builder import (
 from sceneforge.knowledge.scene_face_builder import SceneFaceBuilder
 from sceneforge.knowledge.scene_grouping_builder import SceneGroupingBuilder
 from sceneforge.knowledge.scene_merge_builder import SceneMergeBuilder
+from sceneforge.knowledge.scene_text_builder import SceneTextBuilder
 from sceneforge.knowledge.storage import (
     EntityStore,
     FileEntityStore,
@@ -49,6 +53,7 @@ __all__ = [
     "SceneGroupingBuilder",
     "SceneMergeBuilder",
     "SceneSequenceBuilder",
+    "SceneTextBuilder",
     "build_with_cache",
     "entity_build_key",
     "find_related",

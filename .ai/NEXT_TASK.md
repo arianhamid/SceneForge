@@ -1,74 +1,99 @@
 # Next Task
 
-## Genesis Sprint 12
+## Genesis Sprint 13
 
 ### Current Objective
 
-Four consecutive spikes (Sprints 8-11) found the existing
-`Entity`/`EntityStore` shape sufficient for cross-domain correlation,
-cross-builder merging, and cross-video querying, at real measured
-scale. For the first time, Layer 5 (Knowledge Graph) has no obviously
-overdue gap. Per `docs/philosophy/VISION.md`'s own definition of
-success — "someone runs a real movie through SceneForge once, then
-builds three different things... from that single analysis" — the
-honest next step is not a fifth spike on the same question. It's
-building the first real Application: the smallest real consumer of
-the knowledge this framework now actually produces.
+Sprint 12 delivered the first real Application (`SceneSummary`),
+an architecture-enforcing test suite, a utility provider
+(`MediaHashProvider`), and knowledge-entity validation — all real,
+tested, and verified. ADR-0021 then reconciled a much larger vision
+(the "Understanding Ladder": Evidence → Facts → Entities → Events →
+State → Relationships → Intentions → Narrative → Themes) against this
+project's established discipline: adopt what's already real as
+vocabulary, document the rest as direction with explicit trigger
+conditions, build nothing ahead of a real data source. Sprint 13's
+objective is the first rung of that ladder that isn't built yet:
+**Facts**, which requires a provider that produces something above
+raw detection.
 
 ---
 
-## Completed (Sprints 1-11)
+## Completed (Sprints 1-12)
 
 - Layers 0-3: four real providers across two domains (`ffmpeg`,
-  `scenedetect`, `whisper`, `opencv`).
+  `scenedetect`, `whisper`, `opencv`), plus `MediaHashProvider`
+  (content hashing, no external dependency).
 - Layer 4: three real Knowledge Builders (`SceneGroupingBuilder`,
-  `SceneFaceBuilder` cross-domain, `SceneMergeBuilder` cross-builder),
-  plus `SceneSequenceBuilder` for relationships. `EntityStore`
-  persistence and querying, measured four separate times at real
-  scale (ADR-0012, 0014, 0018, 0019) with no gap found yet.
-- Registry/Pipeline RFC closed (ADR-0017).
-- `examples/end_to_end/analyze_video.py`: full chain — providers,
-  three knowledge-layer stages, merge, all caches — proven against
-  real video.
+  `SceneFaceBuilder`, `SceneMergeBuilder`), `SceneSequenceBuilder` for
+  relationships, `EntityStore` persistence/querying measured four
+  times at real scale (ADR-0012, 0014, 0018, 0019).
+- `sceneforge/knowledge/validation.py` — structural validation for
+  entities (orphan scenes, self-references, duplicate indices,
+  timeline checks), returning typed `ValidationIssue`s.
+- `Entity.provenance` (`Provenance`: builder, source_artifact_ids,
+  confidence) — real, shipped, independently converging with the
+  world-model vision document's "every fact remembers why the system
+  believes it."
+- **First real Application**: `sceneforge.applications.scene_summary.SceneSummary`
+  — reads real scene entities from an `EntityStore`, renders a
+  Markdown summary. Proves `docs/philosophy/VISION.md`'s own success
+  definition for the first time.
+- **Architecture test suite** (`tests/architecture/test_import_rules.py`)
+  — AST-based enforcement of the real dependency graph (core/knowledge/
+  media/runtime/contrib boundaries), including a `TestKnownDependencies`
+  class that positively asserts the real, deliberate ADR-backed
+  dependencies (e.g. `core.pipeline` → `runtime.ProcessingContext`,
+  `knowledge` → specific `contrib` artifact types) are never
+  accidentally flagged.
+- ADR-0020 (stable API surface), ADR-0021 (world-model vocabulary
+  reconciliation — the Understanding Ladder now documented in
+  `docs/architecture/DOMAIN_MODEL.md`, each rung marked real or
+  blocked-on-what).
 
 ---
 
 ## Immediate Tasks
 
-1. **Build the first real Application** — Layer 7, skipping the
-   as-yet-unproven need for Layers 5/6 (Knowledge Graph, Intelligence)
-   as dedicated infrastructure, since nothing has shown they need to
-   be more than "call `iter_all_entities()`/`find_related()` and
-   filter in Python" so far. The smallest real candidate: a script
-   that takes a processed video's `FileEntityStore` and produces a
-   human-readable scene-by-scene summary (dialogue + face count +
-   sequence) — proving `docs/philosophy/VISION.md`'s actual success
-   criterion for the first time, not just its infrastructure.
-2. If (1) reveals a real need for something Layers 5/6 would provide
-   (e.g. genuine multi-hop graph traversal, not just filtering), that's
-   real evidence — build it then, the same discipline as every prior
-   sprint.
-3. `CAPTION`/`OCR`/`OBJECT_DETECTION` remain unimplemented capabilities.
-   Only add one if the Application from (1) creates a concrete need for
-   richer entity content than scene structure + face counts — not
-   speculatively.
+1. **A real `CAPTION` or `OBJECT_DETECTION` provider** — the actual
+   blocker named explicitly in ADR-0021 for the Facts rung. A
+   captioning model is the more direct path to "character speaks" /
+   "door opens"-style Facts; follow ADR-0010's dependency-injection
+   pattern if it needs downloaded weights (most captioning VLMs will),
+   the same way `WhisperTranscribeProvider` was built.
+2. **A minimal `FactExtractionBuilder`** (or similarly named
+   `KnowledgeBuilder`) once (1) exists — turning caption/detection
+   Artifacts into `Fact`-kind Entities. Keep it as narrow as
+   `SceneGroupingBuilder` was on day one: one real transformation,
+   proven against real provider output, not a general Fact-extraction
+   framework.
+3. Do **not** start Events, State, Relationships-beyond-scenes,
+   Intentions, Narrative, or Themes yet — every one of them is
+   transitively blocked on Facts existing first (ADR-0021's table).
+   Building any of them before (1) and (2) are real would repeat the
+   exact mistake this project has now avoided nine separate times.
 
 ---
 
 ## Coding Order
 
-1. `examples/applications/scene_summary.py` (or similar) — a real,
-   runnable Application consuming a real processed video's entities
-2. Only if (1) surfaces a real gap: whatever Layer 5/6 infrastructure
-   it actually needs
+1. `sceneforge/contrib/<captioning-model>/` — new real provider,
+   `docs/guides/ADDING_A_PROVIDER.md` step 3's injection pattern if
+   weights aren't bundled (check bundled-vs-downloaded first, per
+   ADR-0015's lesson — don't assume injection is needed by default)
+2. `sceneforge/knowledge/fact_extraction_builder.py` — only once (1)
+   has real output to build from
+3. A real integration test combining (1) and (2) against a real image/
+   video, the same discipline as every prior Knowledge Builder
 
 ---
 
 ## Success Criteria
 
-- [ ] A real Application exists, consuming real `Entity` data from a
-      real processed video (not synthetic fixtures), and produces
-      genuinely useful output a person would want — the first time
-      this project's own stated definition of success
-      (`docs/philosophy/VISION.md`) has actually been demonstrated
-      end-to-end rather than just built toward.
+- [ ] A real captioning or object-detection provider exists, with
+      tests matching `docs/guides/ADDING_A_PROVIDER.md`'s checklist.
+- [ ] A first real `Fact`-producing Knowledge Builder exists, proven
+      against that provider's real output via integration test.
+- [ ] `docs/architecture/DOMAIN_MODEL.md`'s Understanding Ladder entry
+      for "Facts" is updated from "Not built" to real, with the same
+      honesty about what's still blocked above it.

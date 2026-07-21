@@ -5,10 +5,10 @@ Live snapshot — update this when the state actually changes. See
 
 ## Current Sprint
 
-Genesis Sprint 12: First real Application (SceneSummary) built and
-validated. MediaHashProvider added. ArtifactCategory formalized.
-Entity Provenance typed. Knowledge Validation structured. Architecture
-tests enforcing real dependency graph. ADR-0020 Stable API documented.
+Genesis Sprint 13: build the first real capability toward the "Facts"
+rung of the Understanding Ladder (ADR-0021) — a captioning or
+object-detection provider, the same disciplined pattern as every prior
+real provider.
 
 ## Completed
 

@@ -303,6 +303,30 @@ images) with certainty; the positive-detection claim is real
 production code but unverified here — verify against a real photo
 before relying on it in production.
 
+### sceneforge.contrib.tesseract — algorithmic, bundled weights, verified positive detection
+
+`TesseractOCRProvider` (capability `OCR`) wraps the Tesseract OCR
+engine — trained language data ships as part of the `tesseract-ocr`
+system package, not downloaded separately, the same shape as
+`sceneforge.contrib.opencv`. Unlike the whisper and opencv providers,
+its positive-detection claim *is* verified in this environment: real
+text rendered with a bundled font, read back correctly (see
+`docs/adr/0022-real-ocr-provider.md`).
+
+```python
+from sceneforge.contrib.tesseract import TesseractOCRProvider
+from sceneforge.media.image_loader import LocalImageLoader
+
+media = LocalImageLoader("photo.jpg").load()
+pipeline = Pipeline(provider=TesseractOCRProvider())
+for word in pipeline.run(media):
+    print(word.payload, word.confidence)
+```
+
+`SceneTextBuilder` (`sceneforge.knowledge`) correlates OCR text back to
+scenes via `source_frame_path`, the same cross-domain pattern
+`SceneFaceBuilder` uses (ADR-0016) — confirmed working a second time.
+
 ## Constraints
 
 - Core (`sceneforge.core`) has no external dependencies. Real-world

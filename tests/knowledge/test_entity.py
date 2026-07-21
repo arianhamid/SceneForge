@@ -1,7 +1,8 @@
 """Tests for the Entity base class."""
 
+from uuid import uuid4
+
 import pytest
-from uuid import UUID, uuid4
 
 from sceneforge.knowledge.entity import Entity, EntityKind, Provenance
 

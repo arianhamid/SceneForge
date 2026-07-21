@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Persian educational documentation)
+- `docs/fa/` — a full Persian-language educational walkthrough of the
+  project (10 files + index), written for someone learning both the
+  architecture and the underlying Python patterns from zero: vision
+  and philosophy, layered architecture, Python concepts used in the
+  codebase (dataclasses, Protocol vs ABC, Generic, type hints, custom
+  exceptions, async/await), core concepts with real code excerpts,
+  a full walkthrough of `examples/end_to_end/analyze_video.py`, a
+  guide to all five real providers, the knowledge layer, a
+  contributor's guide to extending the project, a glossary, and a
+  Persian summary of all 22 ADRs highlighting the recurring pattern
+  across the project's history (checking whether an existing shape
+  covers a new need before building something new — confirmed
+  correct at least six separate times).
+
+### Added (Sprint 13: fifth real provider, second cross-domain confirmation)
+- `sceneforge.contrib.tesseract.TesseractOCRProvider`
+  (`Capability.OCR`) — real Tesseract OCR, bundled language data (no
+  network access needed, same shape as OpenCV's Haar cascades). The
+  first provider whose positive-detection claim is genuinely verified
+  in this environment: real text rendered with a bundled font (and,
+  for the integration test, burned into a real video via ffmpeg's
+  `drawtext` filter) is read back correctly.
+- `sceneforge.knowledge.scene_text_builder.SceneTextBuilder` —
+  confirms `SceneFaceBuilder`'s cross-domain correlation pattern
+  (`source_frame_path` matching) for a second real capability, not
+  just the one it was built for.
+- ADR-0022 documents both, and is explicit that this reaches the
+  Evidence layer (organized), not yet the Facts layer (ADR-0021) —
+  recognized text is not the same as its semantic meaning.
+- Fixed: `ArtifactCategory` (introduced in an earlier pass) had zero
+  real consumers — every artifact silently defaulted to `METADATA`.
+  Set real categories on all real artifact types, with tests locking
+  them in.
+- 23 new tests (9 unit `SceneTextBuilder`, 1 real integration, 9 real
+  OCR provider tests, 5 `ArtifactCategory` tests, updated architecture
+  test allowlist).
+
+### Added (Sprint 12: first real Application; world-model vocabulary reconciled)
+- `sceneforge.applications.scene_summary.SceneSummary` — the first
+  real Application: reads scene entities from a real `EntityStore`,
+  renders a Markdown summary. Proves `docs/philosophy/VISION.md`'s own
+  success definition for the first time.
+- `sceneforge.contrib.media_hash.MediaHashProvider` — real content
+  hashing (SHA-256), no external dependency.
+- `tests/architecture/test_import_rules.py` — AST-based enforcement of
+  the real dependency graph, with a `TestKnownDependencies` class that
+  positively asserts real, deliberate ADR-backed dependencies (e.g.
+  `core.pipeline` → `runtime.ProcessingContext`) are never flagged.
+- `sceneforge/knowledge/validation.py` — structural validation for
+  entities (orphan scenes, self-references, duplicate indices,
+  timeline checks), typed `ValidationIssue`s.
+- `Entity.provenance` (`Provenance`: builder, source_artifact_ids,
+  confidence) — real, optional field.
+- ADR-0020 (stable API surface), ADR-0021 (reconciles a much larger
+  "world model" vision document against established discipline —
+  adopts what's already real as vocabulary — Evidence=Artifact,
+  provenance, evidence permanence — documents the rest as direction
+  with explicit trigger conditions, builds nothing ahead of real data).
+- `docs/architecture/DOMAIN_MODEL.md` gains "The Understanding Ladder"
+  — Evidence → Facts → Entities → Events → State → Relationships →
+  Intentions → Narrative → Themes — each rung marked real or
+  blocked-on-what.
+
+### Fixed (Sprint 12)
+- `ArtifactCategory` existed with zero real consumers — every shipped
+  artifact silently defaulted to `METADATA` regardless of what it
+  actually represented. Set real categories on all five real artifact
+  types (`FrameExtractionArtifact` → `DERIVED`, `SceneCutArtifact`/
+  `TranscriptSegmentArtifact` → `ANALYSIS`, `FaceDetectionArtifact` →
+  `DETECTION`, `MediaHashArtifact` → `METADATA`, correctly), with
+  tests locking in the real values.
+
 ### Added (Sprint 11: cross-video querying, fourth confirmation)
 - `tests/knowledge/test_cross_video_query_spike.py`: a synthetic
   400-movie, 15-scenes-per-movie library (23,600 entities, 1,600 real

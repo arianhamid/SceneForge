@@ -36,6 +36,7 @@ ALLOWED_KNOWLEDGE_CONTRIB_IMPORTS: frozenset[str] = frozenset(
         "sceneforge.contrib.scenedetect.scene_cut_artifact",
         "sceneforge.contrib.whisper.transcript_artifact",
         "sceneforge.contrib.opencv.face_detection_artifact",
+        "sceneforge.contrib.tesseract.ocr_artifact",
     }
 )
 
@@ -339,5 +340,7 @@ class TestKnownDependencies:
         # Should contain the known artifact imports
         ffmpeg = "sceneforge.contrib.ffmpeg.frame_extraction_artifact"
         scenedetect = "sceneforge.contrib.scenedetect.scene_cut_artifact"
+        tesseract = "sceneforge.contrib.tesseract.ocr_artifact"
         assert ffmpeg in all_knowledge_imports
         assert scenedetect in all_knowledge_imports
+        assert tesseract in all_knowledge_imports

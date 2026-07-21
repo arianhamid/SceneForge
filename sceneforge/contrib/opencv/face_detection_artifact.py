@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from uuid import UUID, uuid4
 
-from sceneforge.core.artifact import Artifact, ArtifactKind
+from sceneforge.core.artifact import Artifact, ArtifactCategory, ArtifactKind
 from sceneforge.core.storage import register_artifact_type
 
 
@@ -37,4 +37,5 @@ class FaceDetectionArtifact(Artifact[None]):
     face_index: int = 0
     source_frame_path: str = ""
     kind: ArtifactKind = ArtifactKind.FACE_DETECTION
+    category: ArtifactCategory = ArtifactCategory.DETECTION
     provider: str = "opencv_face_detection"

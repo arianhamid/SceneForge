@@ -52,6 +52,10 @@ whisper = [
 opencv = [
     "opencv-python-headless>=4.8",
 ]
+tesseract = [
+    "pytesseract>=0.3",
+    "Pillow>=10.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["core", "tests"]
@@ -82,4 +86,9 @@ ignore_missing_imports = true
 # cv2's bundled stubs don't cover the cv2.data submodule attribute
 # (cv2.data.haarcascades) used by sceneforge/contrib/opencv.
 module = "cv2.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# pytesseract ships no py.typed marker / stubs.
+module = "pytesseract.*"
 ignore_missing_imports = true

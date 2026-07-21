@@ -23,13 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   mypy, CI, and setup documentation use the latest available 3.12 patch; Python
   3.11 support is intentionally dropped (ADR-0023).
 
-### Fixed (async provider execution)
-
-- `SyncProviderAdapter` now uses an explicit worker thread and completion event.
-  This prevents completed synchronous provider calls from hanging when a runtime
-  loses the executor future's cross-thread event-loop wake-up, and allows the
-  complete suite to run under coverage without exclusions.
-
 ### Added (Persian educational documentation)
 
 - `docs/fa/` — a full Persian-language educational walkthrough of the

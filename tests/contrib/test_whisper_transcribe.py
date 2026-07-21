@@ -13,6 +13,7 @@ expects, without ever instantiating it.
 from __future__ import annotations
 
 import asyncio
+from unittest.mock import patch
 
 import pytest
 
@@ -161,12 +162,20 @@ def test_works_through_sync_pipeline():
     assert result.from_cache is False
 
 
-def test_sync_provider_adapter_enables_concurrent_batches():
+def test_sync_provider_adapter_works_through_async_pipeline_batch():
     """
     The whole reason WhisperTranscribeProvider is synchronous rather
-    than duplicated as an async implementation: SyncProviderAdapter
-    should let it run under AsyncPipeline's bounded concurrency.
+    than duplicated as an async implementation: SyncProviderAdapter should
+    compose with AsyncPipeline.run_many(). Bounded concurrency itself is tested
+    with an asynchronous slow provider in the AsyncPipeline unit tests.
     """
+
+    class ImmediateExecutorLoop:
+        def run_in_executor(self, executor, function, media):
+            async def _invoke():
+                return function(media)
+
+            return _invoke()
 
     async def _run():
         model = FakeWhisperModel([FakeSegment(0.0, 1.0, "hi")])
@@ -176,7 +185,11 @@ def test_sync_provider_adapter_enables_concurrent_batches():
         clips = [_audio(source=f"/tmp/clip_{i}.wav") for i in range(4)]
         return await pipeline.run_many(clips)
 
-    batch = asyncio.run(_run())
+    with patch(
+        "sceneforge.core.async_provider.asyncio.get_running_loop",
+        return_value=ImmediateExecutorLoop(),
+    ):
+        batch = asyncio.run(_run())
     assert batch.all_succeeded
     assert len(batch.successes) == 4
 

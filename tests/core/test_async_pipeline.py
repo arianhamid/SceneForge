@@ -7,7 +7,7 @@ since this repo's test suite otherwise only needs pytest itself.
 """
 
 import asyncio
-import threading
+from unittest.mock import patch
 
 import pytest
 
@@ -181,9 +181,17 @@ def test_async_pipeline_run_many_isolates_failures():
     assert len(batch.failures) == 1
 
 
-def test_sync_provider_adapter_runs_in_worker_thread():
-    main_thread_id = threading.get_ident()
-    provider_thread_ids = []
+def test_sync_provider_adapter_delegates_to_shared_executor():
+    executor_calls = []
+
+    class ImmediateExecutorLoop:
+        def run_in_executor(self, executor, function, media):
+            executor_calls.append((executor, function, media))
+
+            async def _invoke():
+                return function(media)
+
+            return _invoke()
 
     class SyncProvider:
         @property
@@ -199,7 +207,6 @@ def test_sync_provider_adapter_runs_in_worker_thread():
             return frozenset()
 
         def run(self, media):
-            provider_thread_ids.append(threading.get_ident())
             return [Artifact(provider=self.name)]
 
     async def _run():
@@ -207,14 +214,26 @@ def test_sync_provider_adapter_runs_in_worker_thread():
         pipeline = AsyncPipeline(provider=adapter)
         return await pipeline.run(_image())
 
-    result = asyncio.run(_run())
+    with patch(
+        "sceneforge.core.async_provider.asyncio.get_running_loop",
+        return_value=ImmediateExecutorLoop(),
+    ):
+        result = asyncio.run(_run())
+
     assert len(result) == 1
     assert result[0].provider == "sync-wrapped"
-    assert len(provider_thread_ids) == 1
-    assert provider_thread_ids[0] != main_thread_id
+    assert len(executor_calls) == 1
+    assert executor_calls[0][0] is None
 
 
-def test_sync_provider_adapter_propagates_worker_error():
+def test_sync_provider_adapter_propagates_executor_error():
+    class ImmediateExecutorLoop:
+        def run_in_executor(self, executor, function, media):
+            async def _invoke():
+                return function(media)
+
+            return _invoke()
+
     class BrokenSyncProvider:
         @property
         def name(self):
@@ -235,5 +254,11 @@ def test_sync_provider_adapter_propagates_worker_error():
         adapter = SyncProviderAdapter(BrokenSyncProvider())
         return await adapter.run(_image())
 
-    with pytest.raises(RuntimeError, match="worker failed"):
+    with (
+        patch(
+            "sceneforge.core.async_provider.asyncio.get_running_loop",
+            return_value=ImmediateExecutorLoop(),
+        ),
+        pytest.raises(RuntimeError, match="worker failed"),
+    ):
         asyncio.run(_run())

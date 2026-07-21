@@ -100,7 +100,7 @@ class OpenCVFaceDetectionProvider(Provider):
                 "required for OpenCVFaceDetectionProvider."
             ) from exc
 
-        cascade_path = cv2.data.haarcascades + self._cascade_name
+        cascade_path = cv2.data.haarcascades + self._cascade_name  # type: ignore[attr-defined,unused-ignore]
         classifier = cv2.CascadeClassifier(cascade_path)
         if classifier.empty():
             raise ProviderError(f"Could not load cascade '{self._cascade_name}'")

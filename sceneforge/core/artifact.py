@@ -7,6 +7,7 @@ through the SceneForge framework.
 
 from __future__ import annotations
 
+from abc import ABC
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -43,7 +44,7 @@ class ArtifactCategory(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
-class Artifact[T]:
+class Artifact[T](ABC):  # noqa: B024 - stable marker; intentionally instantiable
     """
     Immutable base class for every SceneForge artifact.
 

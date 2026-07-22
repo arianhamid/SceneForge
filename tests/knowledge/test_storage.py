@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import json
 from uuid import uuid4
 
 import pytest
 
 from sceneforge.contrib.scenedetect.scene_cut_artifact import SceneCutArtifact
+from sceneforge.core.exceptions import ArtifactSerializationError
 from sceneforge.knowledge.builder import build_with_cache
-from sceneforge.knowledge.entity import Entity, EntityKind
+from sceneforge.knowledge.entity import Entity, EntityKind, Provenance
 from sceneforge.knowledge.exceptions import KnowledgeBuilderError
 from sceneforge.knowledge.scene_grouping_builder import SceneGroupingBuilder
 from sceneforge.knowledge.storage import (
@@ -47,6 +49,140 @@ def test_entity_metadata_and_parents_round_trip():
     assert restored.metadata["scene_index"] == 0
     assert restored.metadata["frame_paths"] == ["a.png"]
     assert restored.parents == (parent_id,)
+
+
+def test_entity_provenance_round_trips_through_dict():
+    """Regression test for the 2026-07-22 implementation review's Critical 2:
+    JSON persistence through `FileEntityStore` previously raised
+    `TypeError: Object of type Provenance is not JSON serializable` for any
+    Entity carrying real Provenance, so no production builder could safely
+    populate the field.
+
+    Goes through real `json.dumps`/`json.loads`, not just the codec
+    functions in memory: without the fix, `_serialize_value` silently
+    passed the `Provenance` object through unchanged, so a dict-only round
+    trip would pass even on the broken code and prove nothing."""
+    source_id = uuid4()
+    provenance = Provenance(
+        builder="scene_face_builder", source_artifact_ids=(source_id,), confidence=0.82
+    )
+    entity = Entity(kind=EntityKind.SCENE, provenance=provenance)
+
+    serialized = entity_to_dict(entity)
+    json_round_tripped = json.loads(json.dumps(serialized))
+    restored = entity_from_dict(json_round_tripped)
+
+    assert restored.provenance == provenance
+    assert restored.provenance.source_artifact_ids == (source_id,)
+
+
+def test_entity_without_provenance_round_trips_as_none():
+    entity = Entity(kind=EntityKind.SCENE, provenance=None)
+
+    restored = entity_from_dict(entity_to_dict(entity))
+
+    assert restored.provenance is None
+
+
+def test_entity_from_legacy_dict_without_provenance_defaults_to_none():
+    data = entity_to_dict(Entity(kind=EntityKind.SCENE))
+    data.pop("provenance")
+
+    restored = entity_from_dict(json.loads(json.dumps(data)))
+
+    assert restored.provenance is None
+
+
+def test_entity_from_dict_wraps_missing_provenance_builder_key():
+    data = entity_to_dict(Entity(kind=EntityKind.SCENE))
+    data["provenance"] = {"source_artifact_ids": [], "confidence": 0.5}  # no "builder"
+
+    with pytest.raises(ArtifactSerializationError) as exc_info:
+        entity_from_dict(data)
+
+    assert isinstance(exc_info.value.__cause__, KeyError)
+
+
+def test_entity_from_dict_wraps_malformed_provenance_uuid():
+    data = entity_to_dict(Entity(kind=EntityKind.SCENE))
+    data["provenance"] = {
+        "builder": "x",
+        "source_artifact_ids": ["not-a-uuid"],
+        "confidence": None,
+    }
+
+    with pytest.raises(ArtifactSerializationError) as exc_info:
+        entity_from_dict(data)
+
+    assert isinstance(exc_info.value.__cause__, ValueError)
+
+
+@pytest.mark.parametrize(
+    "provenance",
+    [
+        "not-a-mapping",
+        17,
+        {"builder": 17},
+        {"builder": "x", "source_artifact_ids": [17]},
+        {"builder": "x", "confidence": "high"},
+    ],
+)
+def test_entity_from_dict_rejects_invalid_provenance_types(provenance: object):
+    data = entity_to_dict(Entity(kind=EntityKind.SCENE))
+    data["provenance"] = provenance
+
+    with pytest.raises(ArtifactSerializationError) as exc_info:
+        entity_from_dict(data)
+
+    assert isinstance(exc_info.value.__cause__, TypeError)
+
+
+def test_entity_from_dict_wraps_malformed_type_tag():
+    data = entity_to_dict(Entity(kind=EntityKind.SCENE))
+    data["__type__"] = []
+
+    with pytest.raises(ArtifactSerializationError) as exc_info:
+        entity_from_dict(data)
+
+    assert isinstance(exc_info.value.__cause__, TypeError)
+
+
+def test_registered_entity_subclass_round_trips_with_provenance():
+    from dataclasses import dataclass
+
+    @register_entity_type
+    @dataclass(frozen=True, slots=True)
+    class ProvenancedCharacterEntity(Entity[str]):
+        name: str = "unknown"
+
+    provenance = Provenance(builder="scene_face_builder", confidence=0.9)
+    entity = ProvenancedCharacterEntity(
+        payload="a description", name="Alice", provenance=provenance
+    )
+    serialized = json.loads(json.dumps(entity_to_dict(entity)))
+    restored = entity_from_dict(serialized)
+
+    assert isinstance(restored, ProvenancedCharacterEntity)
+    assert restored.provenance == provenance
+
+
+def test_file_entity_store_persists_entity_with_provenance(tmp_path):
+    """The same regression as above, but exercised through the real, JSON-backed
+    store rather than the dict codec in isolation -- this is the path a real
+    Knowledge Builder actually uses."""
+    source_id = uuid4()
+    provenance = Provenance(
+        builder="scene_text_builder", source_artifact_ids=(source_id,), confidence=0.5
+    )
+    entity = Entity(kind=EntityKind.SCENE, provenance=provenance)
+    key = "provenance-key"
+
+    FileEntityStore(tmp_path).put(key, [entity])
+
+    reopened = FileEntityStore(tmp_path)
+    cached = reopened.get(key)
+    assert cached is not None
+    assert cached[0].provenance == provenance
 
 
 def test_file_entity_store_persists_across_instances(tmp_path):

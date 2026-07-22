@@ -5,10 +5,15 @@ Live snapshot — update this when repository truth changes. See
 
 ## Current Sprint
 
-Genesis Sprint 13: build the first real capability toward the "Facts" rung of
-the Understanding Ladder (ADR-0021). OCR and scene-level text correlation are
-now real, but they remain organized Evidence; the next missing input is a real
-captioning or object-detection provider.
+Genesis Sprint 14: a 2026-07-22 implementation review of the comprehensive
+movie-understanding research direction reproduced live identity, provenance,
+and evidence-lineage defects in the current foundation (ADR-0024). Sprint 13's
+objective — a real captioning or object-detection provider toward the "Facts"
+rung (ADR-0021) — is deferred until ADR-0024's Phase 0 lands: trustworthy
+media/execution identity, durable evidence anchors, a cache/evidence split,
+and a run manifest. `Entity.provenance` now round-trips through `EntityStore`
+(the first Phase-0 item, shipped); `content_key()`'s identity redesign is
+decided but not yet implemented.
 
 ## Completed
 
@@ -33,7 +38,7 @@ captioning or object-detection provider.
   detection, knowledge construction, relationships, optional face detection,
   cross-builder merging, and cache reuse.
 - The Registry/Pipeline runtime-wiring RFC is closed as unnecessary (ADR-0017).
-- ADRs through 0023 document the current architecture, provider decisions, and
+- ADRs through 0024 document the current architecture, provider decisions, and
   Python compatibility baseline.
 - AI-assisted development now has repository-wide instructions, a human guide,
   reproducible quality commands, Python 3.12 CI, dependency updates, and a
@@ -56,11 +61,32 @@ captioning or object-detection provider.
   implementations. OCR is real, but OCR output alone does not constitute Facts.
 - `ArtifactStore` has no enumeration method equivalent to `EntityStore.keys()`;
   no real artifact-query caller has required it yet.
+- `content_key()` derives from `Media.id`, a random UUID assigned per load, not
+  from file content or provider configuration. Reloading the same unchanged
+  file is a false cache miss; two differently configured runs of the same
+  provider are a false cache hit. Decided in ADR-0024, not yet implemented.
+- `Artifact`/`Entity` have no durable evidence anchor and `ArtifactStore` has
+  no lookup by artifact ID, media, or time, so no application can reliably
+  resolve a conclusion back to its source evidence. Decided in ADR-0024, not
+  yet implemented.
+- The same JSON store serves, without distinction, as an evictable
+  computation cache and an implied durable evidence record. Decided in
+  ADR-0024 (separate the two roles), not yet implemented.
+- `MappingProxyType` on `Artifact`/`Entity` protects only the outer metadata
+  mapping; nested lists/dicts (e.g. frame lists, face maps) remain mutable in
+  place, confirmed by direct reproduction. Explicitly deferred past Phase 0
+  by ADR-0024 — the cache/evidence separation above does not fix this by
+  itself; revisit once a typed Fact/Event payload exists to design a frozen
+  shape against.
 
 ## Architectural Decisions
 
 See `docs/adr/`. The most recent decisions are:
 
+- ADR-0024: Phase 0 (trustworthy media/execution identity, durable evidence
+  anchors, a cache/evidence split, a run manifest) precedes the Facts-rung
+  captioning/object-detection provider; provenance round-tripping shipped
+  immediately, the rest is decided but not yet implemented.
 - ADR-0023: Python 3.12 is the sole supported feature release so local tooling,
   typing, and CI share one verified baseline while patch releases remain floating.
 - ADR-0022: Tesseract provides real OCR and confirms frame-path correlation for
@@ -79,8 +105,11 @@ See `docs/adr/`. The most recent decisions are:
 
 ## Open RFCs
 
-- What should `Media.evolve()` mean for cache invalidation across multiple
-  enrichers? This remains open and low priority.
+None open. The previous entry ("what should `Media.evolve()` mean for
+cache invalidation across multiple enrichers?") is closed by ADR-0024 and
+resolved by that ADR's Phase-0 item 2: metadata-only evolution over the same
+bytes preserves content identity, changed or transformed bytes receive a new
+identity, and output-affecting evolved values enter the execution fingerprint.
 
 Cross-builder merging, cross-video querying, and runtime provider wiring are
 closed decisions, not open RFCs (ADRs 0018, 0019, and 0017 respectively).
@@ -94,6 +123,11 @@ closed decisions, not open RFCs (ADRs 0018, 0019, and 0017 respectively).
 
 ## Immediate Goal
 
-Build a real captioning or object-detection provider, then a minimal builder that
-turns its output into objective Fact entities. Keep Events, State, Intentions,
-Narrative, and Themes deferred until the lower rungs exist.
+Finish ADR-0024's Phase 0: redesign `content_key()` around content identity and
+an execution fingerprint while retaining edition identity for provenance/run
+scope; add a minimal typed evidence-anchor/evidence-link contract with artifact
+lookup by ID/media; separate the evictable computation cache from a durable,
+revision-aware evidence record; add a minimal `AnalysisRun` manifest. Only then
+build a real captioning or object-detection provider and the minimal builder
+that turns its output into objective Fact entities. Keep Events, State,
+Intentions, Narrative, and Themes deferred until the lower rungs exist.

@@ -36,7 +36,7 @@ from uuid import UUID
 
 from sceneforge.core.artifact import Artifact
 from sceneforge.core.exceptions import ArtifactSerializationError
-from sceneforge.knowledge.entity import Entity, EntityKind
+from sceneforge.knowledge.entity import Entity, EntityKind, Provenance
 
 _KNOWN_ENTITY_TYPES: dict[str, type[Entity[Any]]] = {"Entity": Entity}
 
@@ -74,6 +74,12 @@ def _serialize_value(value: Any) -> Any:
         return value.isoformat()
     if isinstance(value, EntityKind):
         return value.value
+    if isinstance(value, Provenance):
+        return {
+            "builder": value.builder,
+            "source_artifact_ids": _serialize_value(value.source_artifact_ids),
+            "confidence": value.confidence,
+        }
     if isinstance(value, (list, tuple)):
         return [_serialize_value(v) for v in value]
     if isinstance(value, Mapping):
@@ -91,28 +97,68 @@ def entity_to_dict(entity: Entity[Any]) -> dict[str, Any]:
         raise ArtifactSerializationError(str(exc)) from exc
 
 
+def _deserialize_provenance(value: Any) -> Provenance | None:
+    if value is None:
+        return None
+    if not isinstance(value, Mapping):
+        raise TypeError("provenance must be a mapping or null")
+
+    builder = value["builder"]
+    if not isinstance(builder, str):
+        raise TypeError("provenance.builder must be a string")
+
+    raw_source_ids = value.get("source_artifact_ids", ())
+    if not isinstance(raw_source_ids, (list, tuple)):
+        raise TypeError("provenance.source_artifact_ids must be a sequence")
+
+    source_artifact_ids: list[UUID] = []
+    for source_id in raw_source_ids:
+        if isinstance(source_id, UUID):
+            source_artifact_ids.append(source_id)
+        elif isinstance(source_id, str):
+            source_artifact_ids.append(UUID(source_id))
+        else:
+            raise TypeError("provenance source artifact ids must be UUIDs or strings")
+
+    confidence = value.get("confidence")
+    if confidence is not None:
+        if isinstance(confidence, bool) or not isinstance(confidence, (int, float)):
+            raise TypeError("provenance.confidence must be a number or null")
+        confidence = float(confidence)
+
+    return Provenance(
+        builder=builder,
+        source_artifact_ids=tuple(source_artifact_ids),
+        confidence=confidence,
+    )
+
+
 def entity_from_dict(data: dict[str, Any]) -> Entity[Any]:
     """Deserialize a dict produced by `entity_to_dict` back into an Entity."""
-    data = dict(data)
-    type_name = data.pop("__type__", "Entity")
-    cls = _KNOWN_ENTITY_TYPES.get(type_name, Entity)
-
-    kwargs: dict[str, Any] = {}
-    for f in fields(cls):
-        if f.name not in data:
-            continue
-        value = data[f.name]
-        if f.name == "id" and isinstance(value, str):
-            value = UUID(value)
-        elif f.name == "created_at" and isinstance(value, str):
-            value = datetime.fromisoformat(value)
-        elif f.name == "kind" and not isinstance(value, EntityKind):
-            value = EntityKind(value)
-        elif f.name == "parents":
-            value = tuple(UUID(v) if isinstance(v, str) else v for v in value)
-        kwargs[f.name] = value
-
     try:
+        data = dict(data)
+        type_name = data.pop("__type__", "Entity")
+        if not isinstance(type_name, str):
+            raise TypeError("__type__ must be a string")
+        cls = _KNOWN_ENTITY_TYPES.get(type_name, Entity)
+
+        kwargs: dict[str, Any] = {}
+        for f in fields(cls):
+            if f.name not in data:
+                continue
+            value = data[f.name]
+            if f.name == "id" and isinstance(value, str):
+                value = UUID(value)
+            elif f.name == "created_at" and isinstance(value, str):
+                value = datetime.fromisoformat(value)
+            elif f.name == "kind" and not isinstance(value, EntityKind):
+                value = EntityKind(value)
+            elif f.name == "parents":
+                value = tuple(UUID(v) if isinstance(v, str) else v for v in value)
+            elif f.name == "provenance":
+                value = _deserialize_provenance(value)
+            kwargs[f.name] = value
+
         return cls(**kwargs)
     except Exception as exc:  # noqa: BLE001 - re-branded, not swallowed
         raise ArtifactSerializationError(str(exc)) from exc

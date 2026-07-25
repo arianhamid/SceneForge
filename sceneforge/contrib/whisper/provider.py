@@ -39,6 +39,8 @@ Example:
 
 from __future__ import annotations
 
+import json
+from hashlib import sha256
 from typing import Any, Protocol, runtime_checkable
 
 from sceneforge.contrib.whisper.transcript_artifact import TranscriptSegmentArtifact
@@ -105,6 +107,24 @@ class WhisperTranscribeProvider(Provider):
     @property
     def capabilities(self) -> frozenset[Capability]:
         return frozenset({Capability.TRANSCRIBE})
+
+    @property
+    def execution_fingerprint(self) -> str:
+        """
+        Distinguish differently configured instances in `content_key()`.
+
+        `transcribe_kwargs` (`language`, `beam_size`, `vad_filter`, ...)
+        is pinned at construction time and genuinely changes what
+        `run()` produces -- a `language="en"` instance and a
+        `language="fr"` instance transcribing the same file are a
+        different question, not a cache hit. This is the concrete case
+        the 2026-07-22 implementation review reproduced live: before
+        this override, both instances shared one `content_key()` (name
+        and version only), so the second one's cached result could
+        silently mask the first's.
+        """
+        basis = json.dumps(self._transcribe_kwargs, sort_keys=True, default=str)
+        return sha256(basis.encode("utf-8")).hexdigest()
 
     def run(self, media: Media) -> list[Artifact[Any]]:
         if not isinstance(media, (AudioMedia, VideoMedia)):

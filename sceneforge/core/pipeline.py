@@ -49,6 +49,7 @@ from sceneforge.core.exceptions import (
 from sceneforge.core.provider_protocol import Provider
 from sceneforge.core.storage import ArtifactStore, content_key
 from sceneforge.media.base import Media
+from sceneforge.runtime.analysis_run import AnalysisRun, StageOutcome, StageRecord
 from sceneforge.runtime.processing_context import ProcessingContext
 
 
@@ -178,6 +179,7 @@ class Pipeline:
         self,
         media: Media,
         context: ProcessingContext | None = None,
+        analysis_run: AnalysisRun | None = None,
     ) -> list[Artifact[Any]]:
         """
         Process media through the provider and return artifacts.
@@ -186,6 +188,10 @@ class Pipeline:
             media: The media object to process.
             context: Optional ProcessingContext for cancellation and
                 shared run metadata. A fresh one is created if omitted.
+            analysis_run: Optional AnalysisRun manifest. When given, one
+                StageRecord is appended for this call's outcome (cache
+                hit, fresh success, skip, or failure) -- see
+                `run_detailed()` for exactly when each is recorded.
 
         Returns:
             A list of artifacts produced by the provider.
@@ -199,26 +205,64 @@ class Pipeline:
             ProcessingCancelledError: If ``context`` was cancelled
                 before or during the run.
         """
-        return self.run_detailed(media, context=context).artifacts
+        return self.run_detailed(
+            media, context=context, analysis_run=analysis_run
+        ).artifacts
 
     def run_detailed(
         self,
         media: Media,
         context: ProcessingContext | None = None,
+        analysis_run: AnalysisRun | None = None,
     ) -> PipelineResult:
-        """Like ``run()``, but returns timing/retry/cache/enriched-media detail too."""
+        """Like ``run()``, but returns timing/retry/cache/enriched-media detail too.
+
+        ``analysis_run``, when given, records exactly one StageRecord for
+        this call: SKIPPED if capability validation rejects ``media``
+        (the exception still raises -- recording is a side channel, not
+        a way to suppress it), ATTEMPTED with ``cache_hit=True`` for a
+        cache hit, ATTEMPTED with ``cache_hit=False`` for a fresh
+        success, or FAILED once retries (if any) are exhausted (also
+        still raises)."""
         context = context if context is not None else ProcessingContext()
         context.ensure_running()
 
         media = self._enrich(media)
-        self._validate_media(media)
+        try:
+            self._validate_media(media)
+        except IncompatibleMediaError:
+            if analysis_run is not None:
+                analysis_run.record(
+                    StageRecord(
+                        provider_name=self._provider.name,
+                        provider_version=self._provider.version,
+                        media_id=media.id,
+                        outcome=StageOutcome.SKIPPED,
+                    )
+                )
+            raise
 
         cache_key: str | None = None
         if self._store is not None:
-            cache_key = content_key(media, self._provider.name, self._provider.version)
+            cache_key = content_key(
+                media,
+                self._provider.name,
+                self._provider.version,
+                self._provider.execution_fingerprint,
+            )
             cached = self._store.get(cache_key)
             if cached is not None:
                 context.metadata[f"{self._provider.name}.cache_hit"] = True
+                if analysis_run is not None:
+                    analysis_run.record(
+                        StageRecord(
+                            provider_name=self._provider.name,
+                            provider_version=self._provider.version,
+                            media_id=media.id,
+                            outcome=StageOutcome.ATTEMPTED,
+                            cache_hit=True,
+                        )
+                    )
                 return PipelineResult(
                     artifacts=cached,
                     media=media,
@@ -248,6 +292,18 @@ class Pipeline:
                 context.metadata[f"{self._provider.name}.attempts"] = attempt
                 if self._store is not None and cache_key is not None:
                     self._store.put(cache_key, artifacts)
+                if analysis_run is not None:
+                    analysis_run.record(
+                        StageRecord(
+                            provider_name=self._provider.name,
+                            provider_version=self._provider.version,
+                            media_id=media.id,
+                            outcome=StageOutcome.ATTEMPTED,
+                            cache_hit=False,
+                            duration_seconds=duration,
+                            attempts=attempt,
+                        )
+                    )
                 return PipelineResult(
                     artifacts=artifacts,
                     media=media,
@@ -260,4 +316,16 @@ class Pipeline:
         context.metadata[f"{self._provider.name}.duration_seconds"] = duration
         context.metadata[f"{self._provider.name}.attempts"] = attempt
         assert last_error is not None  # loop only exits here via the except branch
+        if analysis_run is not None:
+            analysis_run.record(
+                StageRecord(
+                    provider_name=self._provider.name,
+                    provider_version=self._provider.version,
+                    media_id=media.id,
+                    outcome=StageOutcome.FAILED,
+                    duration_seconds=duration,
+                    attempts=attempt,
+                    error=str(last_error),
+                )
+            )
         raise ProviderExecutionError(self._provider.name, last_error) from last_error

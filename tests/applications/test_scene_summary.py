@@ -180,3 +180,151 @@ def test_scene_summary_frame_count_from_list() -> None:
     data = summary.collect()
 
     assert data.scenes[0].frame_count == 3
+
+
+def _make_fact_entity(
+    statement: str = "a cat sitting on a windowsill",
+    media_id: str | None = None,
+    source_provider: str = "transformers_caption",
+    prompt: str | None = None,
+) -> Entity[str]:
+    """Create a FACT Entity with realistic metadata, matching what
+    FactExtractionBuilder actually produces."""
+    return Entity(
+        kind=EntityKind.FACT,
+        builder="fact_extraction",
+        payload=statement,
+        metadata={
+            "media_id": media_id or str(uuid4()),
+            "statement_type": "caption",
+            "source_provider": source_provider,
+            "prompt": prompt,
+        },
+    )
+
+
+def test_scene_summary_empty_store_has_no_facts() -> None:
+    store = InMemoryEntityStore()
+    summary = SceneSummary(store)
+    data = summary.collect()
+    assert data.facts == ()
+
+
+def test_scene_summary_collects_facts() -> None:
+    store = InMemoryEntityStore()
+    store.put("fact:0", [_make_fact_entity("a dog runs on the beach")])
+
+    summary = SceneSummary(store)
+    data = summary.collect()
+
+    assert len(data.facts) == 1
+    assert data.facts[0].statement == "a dog runs on the beach"
+    assert data.facts[0].source_provider == "transformers_caption"
+
+
+def test_scene_summary_collects_multiple_facts():
+    store = InMemoryEntityStore()
+    store.put(
+        "facts",
+        [
+            _make_fact_entity("a dog runs"),
+            _make_fact_entity("a bird flies"),
+        ],
+    )
+
+    summary = SceneSummary(store)
+    data = summary.collect()
+
+    assert {f.statement for f in data.facts} == {"a dog runs", "a bird flies"}
+
+
+def test_scene_summary_ignores_facts_with_empty_payload():
+    store = InMemoryEntityStore()
+    store.put("fact:0", [_make_fact_entity("")])
+
+    summary = SceneSummary(store)
+    data = summary.collect()
+
+    assert data.facts == ()
+
+
+def test_scene_summary_scenes_and_facts_do_not_interfere():
+    store = InMemoryEntityStore()
+    store.put(
+        "mixed",
+        [
+            _make_scene_entity(scene_index=0, payload="dialogue"),
+            _make_fact_entity("a cat"),
+        ],
+    )
+
+    summary = SceneSummary(store)
+    data = summary.collect()
+
+    assert len(data.scenes) == 1
+    assert len(data.facts) == 1
+
+
+def test_render_markdown_includes_facts_section():
+    store = InMemoryEntityStore()
+    store.put("fact:0", [_make_fact_entity("a sunset over the ocean")])
+
+    summary = SceneSummary(store)
+    markdown = summary.render_markdown()
+
+    assert "## Facts" in markdown
+    assert "a sunset over the ocean" in markdown
+    assert "1 facts extracted" in markdown
+
+
+def test_render_markdown_omits_facts_section_when_there_are_none():
+    store = InMemoryEntityStore()
+    store.put("scene:0", [_make_scene_entity(scene_index=0)])
+
+    summary = SceneSummary(store)
+    markdown = summary.render_markdown()
+
+    assert "## Facts" not in markdown
+
+
+def test_render_markdown_still_reports_no_scenes_found_with_only_facts():
+    store = InMemoryEntityStore()
+    store.put("fact:0", [_make_fact_entity("a lonely fact with no scenes")])
+
+    summary = SceneSummary(store)
+    markdown = summary.render_markdown()
+
+    assert "_No scenes found._" in markdown
+    assert "a lonely fact with no scenes" in markdown
+
+
+def test_scene_summary_data_default_facts_is_empty_tuple():
+    assert SceneSummaryData().facts == ()
+
+
+def test_scene_summary_renders_object_detection_facts_without_modification():
+    """SceneSummary was built and tested against caption-derived Facts only.
+    This proves it also handles object-detection-derived Facts correctly
+    with zero code changes -- real end-to-end, not a hand-built fixture --
+    confirming FactExtractionBuilder's shared shape actually holds for
+    downstream consumers too, not just for the builder itself."""
+    from sceneforge.contrib.transformers_object_detection import (
+        ObjectDetectionArtifact,
+    )
+    from sceneforge.knowledge.fact_extraction_builder import FactExtractionBuilder
+
+    media_id = uuid4()
+    detection = ObjectDetectionArtifact(
+        media_id=media_id, label="dog", score=0.9, x_min=1, y_min=2, x_max=3, y_max=4
+    )
+    entities = FactExtractionBuilder().build([detection])
+    store = InMemoryEntityStore()
+    store.put("facts", entities)
+
+    summary = SceneSummary(store)
+    data = summary.collect()
+    markdown = summary.render_markdown()
+
+    assert len(data.facts) == 1
+    assert data.facts[0].statement == "dog detected"
+    assert "dog detected" in markdown

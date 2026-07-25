@@ -22,6 +22,7 @@ docs/adr/0022-real-ocr-provider.md.
 from sceneforge.knowledge.builder import KnowledgeBuilder, build_with_cache
 from sceneforge.knowledge.entity import Entity, EntityKind
 from sceneforge.knowledge.exceptions import KnowledgeBuilderError
+from sceneforge.knowledge.fact_extraction_builder import FactExtractionBuilder
 from sceneforge.knowledge.relationship_builder import (
     RelationshipBuilder,
     SceneSequenceBuilder,
@@ -33,7 +34,11 @@ from sceneforge.knowledge.scene_text_builder import SceneTextBuilder
 from sceneforge.knowledge.storage import (
     EntityStore,
     FileEntityStore,
+    FileKnowledgeRecordStore,
     InMemoryEntityStore,
+    InMemoryKnowledgeRecordStore,
+    KnowledgeRecord,
+    KnowledgeRecordStore,
     entity_build_key,
     find_related,
     iter_all_entities,
@@ -44,10 +49,15 @@ __all__ = [
     "Entity",
     "EntityKind",
     "EntityStore",
+    "FactExtractionBuilder",
     "FileEntityStore",
+    "FileKnowledgeRecordStore",
     "InMemoryEntityStore",
+    "InMemoryKnowledgeRecordStore",
     "KnowledgeBuilder",
     "KnowledgeBuilderError",
+    "KnowledgeRecord",
+    "KnowledgeRecordStore",
     "RelationshipBuilder",
     "SceneFaceBuilder",
     "SceneGroupingBuilder",

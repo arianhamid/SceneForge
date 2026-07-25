@@ -107,14 +107,27 @@ Each rung is marked with what's real today and what would need to
 exist first to build the next one for real.
 
 **Evidence** — everything directly observable: frame, scene cut,
-transcript segment, detected face. *Maps to `Artifact`. Real, four
-providers deep (`sceneforge.contrib.ffmpeg/scenedetect/whisper/opencv`).*
+transcript segment, detected face, OCR text. *Maps to `Artifact`.
+Real, five providers deep
+(`sceneforge.contrib.ffmpeg/scenedetect/whisper/opencv/tesseract`).*
 
 **Facts** — evidence converted into objective, higher-level statements
-("character speaks", "door opens"). *Not built. Blocked on a provider
-that produces something above raw detection — `CAPTION` or
-`OBJECT_DETECTION`, both registered capabilities with no real
-implementation yet.*
+("character speaks", "door opens"). *Real, with two independent real
+inputs: `TransformersCaptionProvider` (`Capability.CAPTION`) produces a
+`CaptionArtifact`, `TransformersObjectDetectionProvider`
+(`Capability.OBJECT_DETECTION`) produces an `ObjectDetectionArtifact`,
+and `FactExtractionBuilder` converts either into a `Fact`-kind `Entity`
+(`EntityKind.FACT`), proven end to end against a real ffmpeg-generated
+image through a real `Pipeline`
+(`tests/knowledge/test_fact_extraction_integration.py`). The second
+provider was built specifically to test generalization: the
+one-Artifact-to-one-Fact shape held, but statement synthesis didn't
+(a caption's text is already the statement; a detection's `label`
+needs a template), so the builder dispatches per artifact type rather
+than assuming one code path fits both. Still deliberately narrow: no
+deduplication of overlapping detections or repeated captions, no
+synthesis across caption/detection/OCR text describing the same
+frame, no contradiction handling.*
 
 **Entities** — persistent objects that survive across scenes (a
 character, a location) and accumulate evidence over time. *Partially
@@ -125,7 +138,11 @@ embedding provider, which doesn't exist yet. `SceneEntity` (via
 `SceneGroupingBuilder`/`SceneFaceBuilder`) is real today.*
 
 **Events** — structured compositions of Facts ("John enters room").
-*Not built. Blocked on Facts existing first.*
+*Not built. Unblocked now that Facts exists (however narrowly), but no
+real Event-producing Knowledge Builder exists yet — per
+`.ai/NEXT_TASK.md`, deliberately not started until a real need
+motivates its shape, the same discipline that produced
+`FactExtractionBuilder`'s narrow scope rather than a speculative one.*
 
 **State** — how entities change over time ("door: closed → opened →
 destroyed"). *Not built. Blocked on Events existing first.*

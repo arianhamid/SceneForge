@@ -48,6 +48,17 @@ class Provider(Protocol):
         """Return the capabilities this provider implements."""
         ...
 
+    @property
+    def execution_fingerprint(self) -> str:
+        """
+        Return a deterministic string capturing configuration that
+        affects this provider's output, beyond name and version.
+
+        Folded into `content_key()` (ADR-0024 Phase 0 item 2). A
+        provider with no such configuration can return `""`.
+        """
+        ...
+
     def run(self, media: Media) -> list[Artifact[Any]]:
         """Process media and return artifacts."""
         ...

@@ -39,6 +39,7 @@ class EntityKind(StrEnum):
 
     ENTITY = "entity"
     SCENE = "scene"
+    FACT = "fact"
     CHARACTER = "character"
     LOCATION = "location"
     CHAPTER = "chapter"

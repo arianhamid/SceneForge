@@ -38,6 +38,11 @@ class AsyncProvider(Protocol):
     @property
     def capabilities(self) -> frozenset[Capability]: ...
 
+    @property
+    def execution_fingerprint(self) -> str:
+        """Folded into `content_key()` (ADR-0024 Phase 0 item 2)."""
+        ...
+
     async def run(self, media: Media) -> list[Artifact[Any]]:
         """Process media and return artifacts."""
         ...
@@ -68,6 +73,10 @@ class SyncProviderAdapter:
     @property
     def capabilities(self) -> frozenset[Capability]:
         return self._provider.capabilities
+
+    @property
+    def execution_fingerprint(self) -> str:
+        return self._provider.execution_fingerprint
 
     async def run(self, media: Media) -> list[Artifact[Any]]:
         loop = asyncio.get_running_loop()

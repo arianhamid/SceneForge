@@ -27,8 +27,8 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterable, Mapping
-from dataclasses import fields
-from datetime import datetime
+from dataclasses import dataclass, field, fields
+from datetime import UTC, datetime
 from hashlib import sha256
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
@@ -281,3 +281,202 @@ def find_related(store: EntityStore, entity_id: UUID) -> list[Entity[Any]]:
     being so.
     """
     return [e for e in iter_all_entities(store) if entity_id in e.parents]
+
+
+@dataclass(frozen=True, slots=True)
+class KnowledgeRecord:
+    """
+    One durable, revisioned version of a Knowledge Builder's conclusion
+    for `key` (ADR-0024 Phase 0 item 4).
+
+    Distinct from an `EntityStore` cache entry: a `KnowledgeRecordStore`
+    never overwrites or deletes what it already knows. Correcting a
+    conclusion means calling `append()` again, which always creates
+    revision N+1 -- revision N's bytes remain readable through
+    `history()`. `retracted` marks a revision as withdrawn without
+    erasing it, so "we no longer believe this" is itself a durable,
+    dated fact rather than a silent disappearance. This is exactly what
+    a cache doesn't give you: evicting a stale `FileEntityStore` entry
+    and correcting an earlier conclusion look identical there, which is
+    the gap this ADR item exists to close.
+    """
+
+    key: str
+    revision: int
+    entities: tuple[Entity[Any], ...]
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    retracted: bool = False
+    retracted_reason: str | None = None
+
+
+def _record_to_dict(record: KnowledgeRecord) -> dict[str, Any]:
+    return {
+        "key": record.key,
+        "revision": record.revision,
+        "entities": [entity_to_dict(e) for e in record.entities],
+        "created_at": record.created_at.isoformat(),
+        "retracted": record.retracted,
+        "retracted_reason": record.retracted_reason,
+    }
+
+
+def _record_from_dict(data: dict[str, Any]) -> KnowledgeRecord:
+    try:
+        return KnowledgeRecord(
+            key=data["key"],
+            revision=data["revision"],
+            entities=tuple(entity_from_dict(e) for e in data["entities"]),
+            created_at=datetime.fromisoformat(data["created_at"]),
+            retracted=data["retracted"],
+            retracted_reason=data.get("retracted_reason"),
+        )
+    except Exception as exc:  # noqa: BLE001 - re-branded, not swallowed
+        raise ArtifactSerializationError(str(exc)) from exc
+
+
+@runtime_checkable
+class KnowledgeRecordStore(Protocol):
+    """
+    Protocol for the durable, append-only counterpart to `EntityStore`.
+
+    Where `EntityStore` answers "what did this exact computation
+    already produce" (evictable, overwritable, keyed by input-artifact
+    set + builder), `KnowledgeRecordStore` answers "what has this
+    project ever concluded about `key`, and does it still believe it."
+    There is no `put`/`delete` here on purpose -- only `append` and
+    `retract`, because durability is the entire point.
+    """
+
+    def append(
+        self,
+        key: str,
+        entities: Iterable[Entity[Any]],
+        *,
+        retracted: bool = False,
+        retracted_reason: str | None = None,
+    ) -> KnowledgeRecord:
+        """Persist a new revision for `key`. Never overwrites a prior one."""
+        ...
+
+    def latest(self, key: str) -> KnowledgeRecord | None:
+        """Return the most recent revision for `key`, or None if there is none.
+
+        "Most recent" includes retracted revisions -- a retraction is
+        itself the latest fact about `key` until superseded again.
+        Callers that specifically want the last non-retracted answer
+        should read `history()` and filter."""
+        ...
+
+    def history(self, key: str) -> list[KnowledgeRecord]:
+        """Return every revision ever recorded for `key`, oldest first."""
+        ...
+
+    def retract(self, key: str, reason: str) -> KnowledgeRecord:
+        """Append a new, empty, `retracted=True` revision for `key`."""
+        ...
+
+    def keys(self) -> list[str]:
+        """Return every key that has at least one revision."""
+        ...
+
+
+class FileKnowledgeRecordStore:
+    """
+    Durable, file-backed `KnowledgeRecordStore`.
+
+    Layout: one directory per key under `root`, one JSON file per
+    revision inside it (`0001.json`, `0002.json`, ...). This class
+    never overwrites or deletes a revision file -- `append()` always
+    creates a new one; `latest()`/`history()` only ever read what's
+    already on disk. Initially the same file format as
+    `FileEntityStore`, deliberately: ADR-0024 item 4 asks for the cache
+    and evidence *roles* to be distinct, not necessarily a different
+    storage technology on day one.
+    """
+
+    def __init__(self, root: str | Path) -> None:
+        self._root = Path(root)
+        self._root.mkdir(parents=True, exist_ok=True)
+
+    def _key_dir(self, key: str) -> Path:
+        return self._root / key
+
+    def append(
+        self,
+        key: str,
+        entities: Iterable[Entity[Any]],
+        *,
+        retracted: bool = False,
+        retracted_reason: str | None = None,
+    ) -> KnowledgeRecord:
+        key_dir = self._key_dir(key)
+        key_dir.mkdir(parents=True, exist_ok=True)
+        next_revision = len(list(key_dir.glob("*.json"))) + 1
+        record = KnowledgeRecord(
+            key=key,
+            revision=next_revision,
+            entities=tuple(entities),
+            retracted=retracted,
+            retracted_reason=retracted_reason,
+        )
+        path = key_dir / f"{next_revision:04d}.json"
+        path.write_text(json.dumps(_record_to_dict(record), indent=2), encoding="utf-8")
+        return record
+
+    def latest(self, key: str) -> KnowledgeRecord | None:
+        history = self.history(key)
+        return history[-1] if history else None
+
+    def history(self, key: str) -> list[KnowledgeRecord]:
+        key_dir = self._key_dir(key)
+        if not key_dir.is_dir():
+            return []
+        paths = sorted(key_dir.glob("*.json"))
+        return [
+            _record_from_dict(json.loads(p.read_text(encoding="utf-8"))) for p in paths
+        ]
+
+    def retract(self, key: str, reason: str) -> KnowledgeRecord:
+        return self.append(key, entities=(), retracted=True, retracted_reason=reason)
+
+    def keys(self) -> list[str]:
+        return [p.name for p in self._root.iterdir() if p.is_dir()]
+
+
+class InMemoryKnowledgeRecordStore:
+    """In-process `KnowledgeRecordStore` backed by a plain dict. For tests."""
+
+    def __init__(self) -> None:
+        self._data: dict[str, list[KnowledgeRecord]] = {}
+
+    def append(
+        self,
+        key: str,
+        entities: Iterable[Entity[Any]],
+        *,
+        retracted: bool = False,
+        retracted_reason: str | None = None,
+    ) -> KnowledgeRecord:
+        history = self._data.setdefault(key, [])
+        record = KnowledgeRecord(
+            key=key,
+            revision=len(history) + 1,
+            entities=tuple(entities),
+            retracted=retracted,
+            retracted_reason=retracted_reason,
+        )
+        history.append(record)
+        return record
+
+    def latest(self, key: str) -> KnowledgeRecord | None:
+        history = self._data.get(key)
+        return history[-1] if history else None
+
+    def history(self, key: str) -> list[KnowledgeRecord]:
+        return list(self._data.get(key, []))
+
+    def retract(self, key: str, reason: str) -> KnowledgeRecord:
+        return self.append(key, entities=(), retracted=True, retracted_reason=reason)
+
+    def keys(self) -> list[str]:
+        return list(self._data.keys())

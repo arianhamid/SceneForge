@@ -7,18 +7,23 @@ threading, MediaEnricher integration, and ArtifactStore caching.
 import pytest
 
 from sceneforge.core.artifact import Artifact, ArtifactKind
+from sceneforge.core.capability import Capability
 from sceneforge.core.exceptions import (
     EnrichmentError,
+    IncompatibleMediaError,
     ProcessingCancelledError,
     ProviderExecutionError,
 )
 from sceneforge.core.pipeline import Pipeline
+from sceneforge.core.provider import Provider
 from sceneforge.core.storage import InMemoryArtifactStore
+from sceneforge.media.audio import AudioMedia
 from sceneforge.media.image import ImageMedia
+from sceneforge.runtime.analysis_run import AnalysisRun, StageOutcome
 from sceneforge.runtime.processing_context import ProcessingContext
 
 
-class FailingProvider:
+class FailingProvider(Provider):
     """Always raises. Used to test error wrapping and retries."""
 
     def __init__(self):
@@ -41,7 +46,7 @@ class FailingProvider:
         raise RuntimeError("boom")
 
 
-class FlakyProvider:
+class FlakyProvider(Provider):
     """Fails on the first call, succeeds after that."""
 
     def __init__(self, fail_times: int = 1):
@@ -67,7 +72,7 @@ class FlakyProvider:
         return [Artifact(kind=ArtifactKind.ARTIFACT, provider=self.name)]
 
 
-class CountingProvider:
+class CountingProvider(Provider):
     """Successful provider that counts how many times it actually ran."""
 
     def __init__(self, name="counting", version="1.0.0"):
@@ -231,5 +236,110 @@ def test_failed_run_does_not_populate_cache():
 
     from sceneforge.core.storage import content_key
 
-    key = content_key(media, provider.name, provider.version)
+    key = content_key(
+        media, provider.name, provider.version, provider.execution_fingerprint
+    )
     assert not store.has(key)
+
+
+class ImageOnlyProvider(Provider):
+    """Only accepts ImageMedia -- used to trigger a real SKIPPED outcome."""
+
+    @property
+    def name(self) -> str:
+        return "image_only"
+
+    @property
+    def version(self) -> str:
+        return "1.0.0"
+
+    @property
+    def capabilities(self):
+        return frozenset({Capability.CAPTION})
+
+    def run(self, media):
+        return [Artifact(kind=ArtifactKind.CAPTION, provider=self.name)]
+
+
+def test_analysis_run_records_a_fresh_success():
+    pipeline = Pipeline(provider=CountingProvider())
+    analysis_run = AnalysisRun()
+
+    pipeline.run(_image(), analysis_run=analysis_run)
+
+    assert len(analysis_run.records) == 1
+    record = analysis_run.records[0]
+    assert record.outcome == StageOutcome.ATTEMPTED
+    assert record.cache_hit is False
+    assert record.provider_name == "counting"
+
+
+def test_analysis_run_records_a_cache_hit():
+    store = InMemoryArtifactStore()
+    pipeline = Pipeline(provider=CountingProvider(), store=store)
+    media = _image()
+    analysis_run = AnalysisRun()
+
+    pipeline.run(media, analysis_run=analysis_run)  # populates the cache
+    pipeline.run(media, analysis_run=analysis_run)  # should hit it
+
+    assert len(analysis_run.records) == 2
+    assert analysis_run.records[0].cache_hit is False
+    assert analysis_run.records[1].cache_hit is True
+    assert analysis_run.records[1].outcome == StageOutcome.ATTEMPTED
+
+
+def test_analysis_run_records_a_failure_and_still_raises():
+    pipeline = Pipeline(provider=FailingProvider())
+    analysis_run = AnalysisRun()
+
+    with pytest.raises(ProviderExecutionError):
+        pipeline.run(_image(), analysis_run=analysis_run)
+
+    assert len(analysis_run.records) == 1
+    record = analysis_run.records[0]
+    assert record.outcome == StageOutcome.FAILED
+    assert record.error is not None
+    assert "boom" in record.error
+
+
+def test_analysis_run_records_a_skip_and_still_raises():
+    pipeline = Pipeline(provider=ImageOnlyProvider())
+    audio = AudioMedia(name="sound.wav", duration=1.0, sample_rate=44100, channels=1)
+    analysis_run = AnalysisRun()
+
+    with pytest.raises(IncompatibleMediaError):
+        pipeline.run(audio, analysis_run=analysis_run)
+
+    assert len(analysis_run.records) == 1
+    assert analysis_run.records[0].outcome == StageOutcome.SKIPPED
+
+
+def test_analysis_run_coverage_reflects_mixed_outcomes():
+    store = InMemoryArtifactStore()
+    analysis_run = AnalysisRun()
+
+    ok_pipeline = Pipeline(provider=CountingProvider(), store=store)
+    ok_pipeline.run(_image(), analysis_run=analysis_run)
+
+    fail_pipeline = Pipeline(provider=FailingProvider())
+    with pytest.raises(ProviderExecutionError):
+        fail_pipeline.run(_image(), analysis_run=analysis_run)
+
+    skip_pipeline = Pipeline(provider=ImageOnlyProvider())
+    audio = AudioMedia(name="sound.wav", duration=1.0, sample_rate=44100, channels=1)
+    with pytest.raises(IncompatibleMediaError):
+        skip_pipeline.run(audio, analysis_run=analysis_run)
+
+    coverage = analysis_run.coverage()
+    assert coverage[StageOutcome.ATTEMPTED] == 1
+    assert coverage[StageOutcome.FAILED] == 1
+    assert coverage[StageOutcome.SKIPPED] == 1
+
+
+def test_pipeline_run_without_analysis_run_is_unaffected():
+    """analysis_run is opt-in -- omitting it changes nothing about the
+    existing return/raise contract."""
+    pipeline = Pipeline(provider=CountingProvider())
+    artifacts = pipeline.run(_image())
+    assert len(artifacts) == 1

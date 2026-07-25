@@ -207,7 +207,7 @@ class IdentityArtifact(Artifact[None]):
 
 ## Real Providers Shipped in sceneforge.contrib
 
-Three real, non-stub providers exist so far — use the closest one as a
+Six real, non-stub providers exist so far — use the closest one as a
 template for a new provider rather than starting from a blank file.
 See `docs/guides/ADDING_A_PROVIDER.md` for the full checklist.
 
@@ -326,6 +326,36 @@ for word in pipeline.run(media):
 `SceneTextBuilder` (`sceneforge.knowledge`) correlates OCR text back to
 scenes via `source_frame_path`, the same cross-domain pattern
 `SceneFaceBuilder` uses (ADR-0016) — confirmed working a second time.
+
+### sceneforge.contrib.transformers_caption — model-backed, dependency-injected
+
+`TransformersCaptionProvider` (capability `CAPTION`) wraps a Hugging
+Face `transformers` `image-text-to-text` pipeline — the same
+dependency-injected shape as `sceneforge.contrib.whisper`, since real
+model weights need network access to the Hugging Face Hub, not bundled
+with the package. `ImageTextToTextPipelineProtocol` was modeled on
+`transformers`' actual installed source, not guessed. Only `ImageMedia`
+is accepted (not `VideoMedia`, even though `Capability.CAPTION` is
+registered for both) — captioning a whole video requires a
+frame-selection decision this provider deliberately leaves to whatever
+extracts frames first (`sceneforge.contrib.ffmpeg`).
+
+```python
+from transformers import pipeline
+from sceneforge.contrib.transformers_caption import TransformersCaptionProvider
+from sceneforge.media.image_loader import LocalImageLoader
+
+pipe = pipeline(task="image-text-to-text", model="Salesforce/blip-image-captioning-base")
+media = LocalImageLoader("frame.png").load()
+pipeline_ = Pipeline(provider=TransformersCaptionProvider(pipe))
+for caption in pipeline_.run(media):
+    print(caption.payload)
+```
+
+Like the whisper provider, its positive-detection claim is not
+verified in this environment (no Hugging Face Hub network access, no
+`torch` installed) — only the real pipeline class's shape is checked,
+without instantiation.
 
 ## Constraints
 

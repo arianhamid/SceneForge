@@ -7,12 +7,15 @@ understanding becomes reusable forever" -- is meaningless without a
 place for "once" to actually stick.
 
 `content_key()` derives a stable cache key from *what was asked*
-(media identity + provider name + provider version), not a random run
-id, so re-running the same provider against the same media is a cache
-hit rather than a re-run. Upgrading a provider (a real model swap,
-e.g. Whisper v2 -> v3) naturally produces a new key instead of
-silently serving stale results, because the version is part of the
-key.
+(media content identity + provider name + provider version + execution
+fingerprint), not a random run id or the random per-load `Media.id`, so
+re-running the same provider with the same configuration against the
+same file content is a cache hit rather than a re-run. Upgrading a
+provider (a real model swap, e.g. Whisper v2 -> v3) naturally produces
+a new key instead of silently serving stale results, because the
+version is part of the key -- and so does reconfiguring a provider's
+execution parameters, via `execution_fingerprint` (ADR-0024 Phase 0
+item 2).
 
 ArtifactStore is a Protocol so the framework isn't wedded to any one
 backend. FileArtifactStore is the smallest useful implementation --
@@ -67,17 +70,70 @@ from sceneforge.core.identity_artifact import IdentityArtifact  # noqa: E402
 register_artifact_type(IdentityArtifact)
 
 
-def content_key(media: Media, provider_name: str, provider_version: str) -> str:
+def media_content_identity(media: Media) -> str:
+    """
+    Derive a stable content identity for `media`, independent of the
+    random per-load `media.id`.
+
+    Two loads of the same unchanged file must resolve to the same
+    identity, and two different files must not collide. When a real
+    file backs the media (`metadata["source"]` set by a `Local*Loader`
+    and still present on disk), hash its actual bytes. Otherwise --
+    synthetic or in-memory media with no backing file, common in tests
+    -- fall back to a deterministic hash of `media.name`. This mirrors
+    `MediaHashProvider`'s existing two-tier strategy
+    (`sceneforge/contrib/media_hash/provider.py`) rather than importing
+    it: Core cannot depend on `contrib`
+    (`tests/architecture/test_import_rules.py`), and that provider
+    exists to produce a separate, durable, queryable hash Artifact, not
+    a cache-key primitive.
+
+    The name-based fallback is a known, weaker identity notion --
+    documented, not hidden: two unrelated synthetic `Media` objects
+    that happen to share a name will collide under it. Real files
+    (the case that matters for the "analyze once, reuse forever"
+    promise) always get a true content hash.
+    """
+    source = media.metadata.get("source")
+    if source and Path(str(source)).is_file():
+        digest = sha256()
+        with open(source, "rb") as f:
+            for chunk in iter(lambda: f.read(65536), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+    return sha256(media.name.encode("utf-8")).hexdigest()
+
+
+def content_key(
+    media: Media,
+    provider_name: str,
+    provider_version: str,
+    execution_fingerprint: str = "",
+) -> str:
     """
     Derive a stable, content-addressable cache key.
 
-    Two calls with the same media *identity*, provider name, and
-    provider version always produce the same key -- exactly what
-    "analyze once, reuse forever" needs: if WhisperProvider v1.2
-    already ran on this file, running it again is a lookup, not a
-    re-run.
+    Two calls with the same media *content*, provider name, provider
+    version, and execution fingerprint always produce the same key --
+    exactly what "analyze once, reuse forever" needs: if WhisperProvider
+    v1.2 already ran on this file with this configuration, running it
+    again is a lookup, not a re-run.
+
+    Basis is content identity (real file-bytes hash, or a documented
+    name-based fallback for media with no backing file -- see
+    `media_content_identity()`), not the random `Media.id` assigned per
+    load: reloading the same unchanged file must be a cache hit, not a
+    guaranteed miss. `execution_fingerprint` folds in whatever
+    provider configuration (model revision, prompt/template version,
+    sampling parameters, ...) actually changes the provider's output,
+    so two differently configured instances of the same
+    name/version do not collide (ADR-0024 Phase 0 item 2; before this,
+    `content_key()` had no way to distinguish them).
     """
-    basis = f"{media.name}:{media.id}:{provider_name}:{provider_version}"
+    basis = (
+        f"{media_content_identity(media)}:{provider_name}:{provider_version}"
+        f":{execution_fingerprint}"
+    )
     return sha256(basis.encode("utf-8")).hexdigest()
 
 
@@ -154,6 +210,20 @@ class ArtifactStore(Protocol):
         """Remove any cached entry for ``key``. No-op if there isn't one."""
         ...
 
+    def keys(self) -> list[str]:
+        """
+        Return every key currently stored.
+
+        Added for ADR-0024 Phase 0 item 3: artifact lookup by ID and by
+        media needs to enumerate before it can filter, the same reason
+        `EntityStore.keys()` was added in ADR-0014. This was previously
+        the one asymmetry between `ArtifactStore` and `EntityStore`
+        (tracked in `PROJECT_STATE.md`'s Known Problems as "no real
+        artifact-query caller has required it yet") -- the evidence
+        lookup below is that caller.
+        """
+        ...
+
 
 class FileArtifactStore:
     """
@@ -190,6 +260,9 @@ class FileArtifactStore:
         if path.exists():
             path.unlink()
 
+    def keys(self) -> list[str]:
+        return [path.stem for path in self._root.glob("*.json")]
+
 
 class InMemoryArtifactStore:
     """
@@ -218,3 +291,57 @@ class InMemoryArtifactStore:
 
     def delete(self, key: str) -> None:
         self._data.pop(key, None)
+
+    def keys(self) -> list[str]:
+        return list(self._data.keys())
+
+
+def iter_all_artifacts(store: ArtifactStore) -> Iterable[Artifact[Any]]:
+    """
+    Load and yield every Artifact currently in `store`.
+
+    The naive query primitive, matching `iter_all_entities()` in
+    `knowledge/storage.py` exactly: enumerate every key, fetch it,
+    flatten. No index, no filtering pushed down to storage -- fine at
+    the measured scale precedent set by ADR-0014/ADR-0019 for
+    `EntityStore`; revisit only if a real query demonstrates this
+    doesn't hold for `ArtifactStore` too.
+    """
+    for key in store.keys():  # noqa: SIM118 - ArtifactStore.keys(), not dict.keys()
+        artifacts = store.get(key)
+        if artifacts:
+            yield from artifacts
+
+
+def find_artifact_by_id(
+    store: ArtifactStore, artifact_id: UUID
+) -> Artifact[Any] | None:
+    """
+    Return the Artifact with `artifact_id`, or None if no cached entry has it.
+
+    The concrete gap ADR-0024 Phase 0 item 3 exists to close: before
+    this, nothing let an application resolve an `EvidenceLink`'s
+    `Reference(kind=ReferenceKind.ARTIFACT, id=...)` back to the actual
+    Artifact it points at.
+    """
+    for artifact in iter_all_artifacts(store):
+        if artifact.id == artifact_id:
+            return artifact
+    return None
+
+
+def find_artifacts_by_media(
+    store: ArtifactStore, media_id: UUID
+) -> list[Artifact[Any]]:
+    """
+    Return every Artifact produced from `media_id`.
+
+    Artifact's base class carries no `media_id` field -- concrete
+    subclasses add it (see `SceneCutArtifact`, `TranscriptSegmentArtifact`,
+    etc.), so this reads it structurally via `getattr` rather than
+    assuming every Artifact has one. An Artifact with no `media_id`
+    attribute at all is simply excluded, not an error.
+    """
+    return [
+        a for a in iter_all_artifacts(store) if getattr(a, "media_id", None) == media_id
+    ]

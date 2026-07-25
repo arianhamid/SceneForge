@@ -43,6 +43,7 @@ from sceneforge.core.exceptions import (
 from sceneforge.core.pipeline import PipelineResult
 from sceneforge.core.storage import ArtifactStore, content_key
 from sceneforge.media.base import Media
+from sceneforge.runtime.analysis_run import AnalysisRun, StageOutcome, StageRecord
 from sceneforge.runtime.processing_context import ProcessingContext
 
 
@@ -125,28 +126,64 @@ class AsyncPipeline:
         self,
         media: Media,
         context: ProcessingContext | None = None,
+        analysis_run: AnalysisRun | None = None,
     ) -> list[Artifact[Any]]:
         """Process media through the provider and return artifacts."""
-        result = await self.run_detailed(media, context=context)
+        result = await self.run_detailed(
+            media, context=context, analysis_run=analysis_run
+        )
         return result.artifacts
 
     async def run_detailed(
         self,
         media: Media,
         context: ProcessingContext | None = None,
+        analysis_run: AnalysisRun | None = None,
     ) -> PipelineResult:
-        """Like ``run()``, but returns timing/retry/cache/enriched-media detail too."""
+        """Like ``run()``, but returns timing/retry/cache/enriched-media detail too.
+
+        ``analysis_run`` behaves exactly as documented on
+        ``Pipeline.run_detailed()``: SKIPPED/ATTEMPTED/FAILED, recorded
+        as a side channel alongside (not instead of) the normal
+        return/raise behavior."""
         context = context if context is not None else ProcessingContext()
         context.ensure_running()
 
         media = await self._enrich(media)
-        self._validate_media(media)
+        try:
+            self._validate_media(media)
+        except IncompatibleMediaError:
+            if analysis_run is not None:
+                analysis_run.record(
+                    StageRecord(
+                        provider_name=self._provider.name,
+                        provider_version=self._provider.version,
+                        media_id=media.id,
+                        outcome=StageOutcome.SKIPPED,
+                    )
+                )
+            raise
 
         cache_key: str | None = None
         if self._store is not None:
-            cache_key = content_key(media, self._provider.name, self._provider.version)
+            cache_key = content_key(
+                media,
+                self._provider.name,
+                self._provider.version,
+                self._provider.execution_fingerprint,
+            )
             cached = self._store.get(cache_key)
             if cached is not None:
+                if analysis_run is not None:
+                    analysis_run.record(
+                        StageRecord(
+                            provider_name=self._provider.name,
+                            provider_version=self._provider.version,
+                            media_id=media.id,
+                            outcome=StageOutcome.ATTEMPTED,
+                            cache_hit=True,
+                        )
+                    )
                 return PipelineResult(
                     artifacts=cached,
                     media=media,
@@ -189,6 +226,18 @@ class AsyncPipeline:
                 duration = time.monotonic() - start
                 if self._store is not None and cache_key is not None:
                     self._store.put(cache_key, artifacts)
+                if analysis_run is not None:
+                    analysis_run.record(
+                        StageRecord(
+                            provider_name=self._provider.name,
+                            provider_version=self._provider.version,
+                            media_id=media.id,
+                            outcome=StageOutcome.ATTEMPTED,
+                            cache_hit=False,
+                            duration_seconds=duration,
+                            attempts=attempt,
+                        )
+                    )
                 return PipelineResult(
                     artifacts=artifacts,
                     media=media,
@@ -198,6 +247,18 @@ class AsyncPipeline:
                 )
 
         assert last_error is not None  # loop only exits here via the except branch
+        if analysis_run is not None:
+            analysis_run.record(
+                StageRecord(
+                    provider_name=self._provider.name,
+                    provider_version=self._provider.version,
+                    media_id=media.id,
+                    outcome=StageOutcome.FAILED,
+                    duration_seconds=time.monotonic() - start,
+                    attempts=attempt,
+                    error=str(last_error),
+                )
+            )
         if isinstance(last_error, ProviderTimeoutError):
             raise last_error
         raise ProviderExecutionError(self._provider.name, last_error) from last_error
@@ -206,6 +267,7 @@ class AsyncPipeline:
         self,
         media_items: list[Media],
         context: ProcessingContext | None = None,
+        analysis_run: AnalysisRun | None = None,
     ) -> BatchResult:
         """
         Process many Media items concurrently, bounded by ``max_concurrency``.
@@ -213,7 +275,9 @@ class AsyncPipeline:
         One item failing (including timing out, after retries) does
         not cancel the rest of the batch -- it's recorded in
         ``BatchResult.failures`` keyed by ``media.id`` while every
-        other item keeps running.
+        other item keeps running. ``analysis_run``, when given, is
+        shared across the whole batch: every item's outcome (including
+        skips and failures) is recorded on the same manifest.
         """
         context = context if context is not None else ProcessingContext()
         semaphore = asyncio.Semaphore(self._max_concurrency)
@@ -223,7 +287,9 @@ class AsyncPipeline:
         async def _bounded_run(item: Media) -> None:
             async with semaphore:
                 try:
-                    result = await self.run_detailed(item, context=context)
+                    result = await self.run_detailed(
+                        item, context=context, analysis_run=analysis_run
+                    )
                 except Exception as exc:  # noqa: BLE001 - isolate this item's failure
                     failures[item.id] = exc
                 else:

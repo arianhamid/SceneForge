@@ -14,8 +14,16 @@ import pytest
 from sceneforge.core.artifact import Artifact, ArtifactKind
 from sceneforge.core.async_pipeline import AsyncPipeline
 from sceneforge.core.async_provider import SyncProviderAdapter
-from sceneforge.core.exceptions import ProviderExecutionError, ProviderTimeoutError
+from sceneforge.core.capability import Capability
+from sceneforge.core.exceptions import (
+    IncompatibleMediaError,
+    ProviderExecutionError,
+    ProviderTimeoutError,
+)
+from sceneforge.core.storage import InMemoryArtifactStore
+from sceneforge.media.audio import AudioMedia
 from sceneforge.media.image import ImageMedia
+from sceneforge.runtime.analysis_run import AnalysisRun, StageOutcome
 
 
 class AsyncCountingProvider:
@@ -35,6 +43,10 @@ class AsyncCountingProvider:
     @property
     def capabilities(self):
         return frozenset()
+
+    @property
+    def execution_fingerprint(self):
+        return ""
 
     async def run(self, media):
         self.calls += 1
@@ -262,3 +274,113 @@ def test_sync_provider_adapter_propagates_executor_error():
         pytest.raises(RuntimeError, match="worker failed"),
     ):
         asyncio.run(_run())
+
+
+class AsyncImageOnlyProvider:
+    """Only accepts ImageMedia -- used to trigger a real SKIPPED outcome."""
+
+    @property
+    def name(self):
+        return "async-image-only"
+
+    @property
+    def version(self):
+        return "1.0.0"
+
+    @property
+    def capabilities(self):
+        return frozenset({Capability.CAPTION})
+
+    @property
+    def execution_fingerprint(self):
+        return ""
+
+    async def run(self, media):
+        return [Artifact(kind=ArtifactKind.CAPTION, provider=self.name)]
+
+
+def test_async_analysis_run_records_a_fresh_success():
+    async def _run():
+        pipeline = AsyncPipeline(AsyncCountingProvider())
+        analysis_run = AnalysisRun()
+        await pipeline.run(_image(), analysis_run=analysis_run)
+        return analysis_run
+
+    analysis_run = asyncio.run(_run())
+
+    assert len(analysis_run.records) == 1
+    record = analysis_run.records[0]
+    assert record.outcome == StageOutcome.ATTEMPTED
+    assert record.cache_hit is False
+
+
+def test_async_analysis_run_records_a_cache_hit():
+    async def _run():
+        store = InMemoryArtifactStore()
+        pipeline = AsyncPipeline(AsyncCountingProvider(), store=store)
+        media = _image()
+        analysis_run = AnalysisRun()
+        await pipeline.run(media, analysis_run=analysis_run)
+        await pipeline.run(media, analysis_run=analysis_run)
+        return analysis_run
+
+    analysis_run = asyncio.run(_run())
+
+    assert len(analysis_run.records) == 2
+    assert analysis_run.records[0].cache_hit is False
+    assert analysis_run.records[1].cache_hit is True
+
+
+def test_async_analysis_run_records_a_failure_and_still_raises():
+    async def _run():
+        pipeline = AsyncPipeline(AsyncFailingProvider())
+        analysis_run = AnalysisRun()
+        with pytest.raises(ProviderExecutionError):
+            await pipeline.run(_image(), analysis_run=analysis_run)
+        return analysis_run
+
+    analysis_run = asyncio.run(_run())
+
+    assert len(analysis_run.records) == 1
+    assert analysis_run.records[0].outcome == StageOutcome.FAILED
+    assert "boom" in analysis_run.records[0].error
+
+
+def test_async_analysis_run_records_a_skip_and_still_raises():
+    async def _run():
+        pipeline = AsyncPipeline(AsyncImageOnlyProvider())
+        audio = AudioMedia(
+            name="sound.wav", duration=1.0, sample_rate=44100, channels=1
+        )
+        analysis_run = AnalysisRun()
+        with pytest.raises(IncompatibleMediaError):
+            await pipeline.run(audio, analysis_run=analysis_run)
+        return analysis_run
+
+    analysis_run = asyncio.run(_run())
+
+    assert len(analysis_run.records) == 1
+    assert analysis_run.records[0].outcome == StageOutcome.SKIPPED
+
+
+def test_run_many_shares_one_analysis_run_across_the_batch():
+    async def _run():
+        pipeline = AsyncPipeline(AsyncCountingProvider(), max_concurrency=2)
+        analysis_run = AnalysisRun()
+        media_items = [_image(f"scene_{i}.jpg") for i in range(4)]
+        await pipeline.run_many(media_items, analysis_run=analysis_run)
+        return analysis_run
+
+    analysis_run = asyncio.run(_run())
+
+    assert len(analysis_run.records) == 4
+    assert all(r.outcome == StageOutcome.ATTEMPTED for r in analysis_run.records)
+
+
+def test_async_pipeline_run_without_analysis_run_is_unaffected():
+    async def _run():
+        pipeline = AsyncPipeline(AsyncCountingProvider())
+        return await pipeline.run(_image())
+
+    artifacts = asyncio.run(_run())
+    assert len(artifacts) == 1

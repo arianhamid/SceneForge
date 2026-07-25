@@ -55,6 +55,14 @@ tesseract = [
     "pytesseract>=0.3",
     "Pillow>=10.0",
 ]
+transformers_caption = [
+    "transformers>=4.40",
+    "torch>=2.0",
+]
+transformers_object_detection = [
+    "transformers>=4.40",
+    "torch>=2.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["core", "tests"]

@@ -14,6 +14,13 @@ from sceneforge.core.capability_registry import (
     build_default_capability_registry,
 )
 from sceneforge.core.enrichment import ChainedEnricher, MediaEnricher
+from sceneforge.core.evidence import (
+    EvidenceAnchor,
+    EvidenceLink,
+    EvidenceRelation,
+    Reference,
+    ReferenceKind,
+)
 from sceneforge.core.exceptions import (
     ArtifactNotFoundError,
     ArtifactSerializationError,
@@ -36,7 +43,13 @@ from sceneforge.core.pipeline import Pipeline, PipelineResult
 from sceneforge.core.provider import Provider
 from sceneforge.core.provider_protocol import Provider as ProviderProtocol
 from sceneforge.core.registry import Registry
-from sceneforge.core.storage import ArtifactStore, FileArtifactStore, content_key
+from sceneforge.core.storage import (
+    ArtifactStore,
+    FileArtifactStore,
+    content_key,
+    find_artifact_by_id,
+    find_artifacts_by_media,
+)
 
 __all__ = [
     "Artifact",
@@ -53,6 +66,9 @@ __all__ = [
     "DEFAULT_CAPABILITY_REGISTRY",
     "DuplicateProviderError",
     "EnrichmentError",
+    "EvidenceAnchor",
+    "EvidenceLink",
+    "EvidenceRelation",
     "FileArtifactStore",
     "IdentityArtifact",
     "IncompatibleMediaError",
@@ -69,8 +85,12 @@ __all__ = [
     "ProviderNotFoundError",
     "ProviderProtocol",
     "ProviderTimeoutError",
+    "Reference",
+    "ReferenceKind",
     "Registry",
     "SceneForgeError",
     "build_default_capability_registry",
     "content_key",
+    "find_artifact_by_id",
+    "find_artifacts_by_media",
 ]

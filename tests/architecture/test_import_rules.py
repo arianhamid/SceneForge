@@ -37,6 +37,8 @@ ALLOWED_KNOWLEDGE_CONTRIB_IMPORTS: frozenset[str] = frozenset(
         "sceneforge.contrib.whisper.transcript_artifact",
         "sceneforge.contrib.opencv.face_detection_artifact",
         "sceneforge.contrib.tesseract.ocr_artifact",
+        "sceneforge.contrib.transformers_caption.caption_artifact",
+        "sceneforge.contrib.transformers_object_detection.object_detection_artifact",
     }
 )
 

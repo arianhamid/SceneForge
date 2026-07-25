@@ -65,83 +65,159 @@ Phase-0 granularity rather than only at the phase level.
    the implementation review used to reproduce the failure.
 
 2. **Content identity plus an execution fingerprint**, replacing the single
-   random `Media.id` currently used in `content_key()`:
-   - *Content identity*: derived from file bytes (or a documented
-     normalized-asset hash where byte-identity is not the right notion),
-     not a random UUID. Two loads of the same unchanged file must resolve
-     to the same content identity.
-   - *Edition identity*: reserved as an initially unresolved/opaque field for
-     the logical work and specific cut (theatrical, extended, regional, etc.).
-     It belongs in provenance, run scope, and queries, but does not enter the
-     computation-cache key merely because external matching later resolves or
-     corrects it. A provider includes edition-derived information in its
-     execution fingerprint only when that information actually changes the
-     computation. Populating edition identity automatically remains Phase 4's
-     concern.
-   - *Execution fingerprint*: provider implementation and schema version,
-     model ID/revision (and weights hash where feasible), prompt/template
-     version, sampling/preprocessing/inference configuration, and relevant
-     tool/library versions — exposed through a deterministic provider
-     execution descriptor and folded into `content_key()` alongside provider
-     name and version. Secrets and incidental process state never enter this
-     descriptor.
-   - `Media.evolve()` preserves content identity when it only adds or corrects
-     descriptive metadata for the same underlying bytes. Changing the source
-     bytes or creating a transformed derivative requires a new content
-     identity. Any evolved value that changes provider behavior belongs in the
-     provider's execution fingerprint; descriptive values that do not affect
-     output do not invalidate the computation cache.
-   - This is a breaking, cache-invalidating change to `content_key()`. That
-     is accepted deliberately: the current key quietly conflates
-     configurations that must not collide and quietly misses reloads that
-     should hit. There is no real cached corpus in production to migrate,
-     so no migration tooling is being built for it — existing local caches
-     are simply invalidated.
-   - **This item is decided here, not implemented here.** It changes a
-     stable, exercised contract (`content_key()`, `ArtifactStore`) touched
-     by every existing provider and test, and needs its own follow-on
-     change and test pass rather than riding in on this ADR.
+   random `Media.id` currently used in `content_key()`. **Shipped**,
+   narrower than originally decided here — see below for what's real and
+   what's still open:
+   - *Content identity*: **shipped.**
+     [`media_content_identity()`](../../sceneforge/core/storage.py) hashes
+     real file bytes when `metadata["source"]` is set and resolves to a
+     file on disk; otherwise it falls back to a documented, deterministic
+     hash of `media.name` (synthetic/in-memory media with no backing
+     file — mirrors `MediaHashProvider`'s existing two-tier strategy
+     rather than importing it, since Core cannot depend on `contrib`).
+     Verified directly: two separate loads of the same unchanged file now
+     produce the same `content_key()`; two different files produce
+     different keys.
+   - *Edition identity*: **not shipped, deferred further.** The original
+     plan reserved an unresolved/opaque field on `Media` for the logical
+     work and cut. On implementation, adding that field now would mean
+     adding a speculative field to a stable, heavily used dataclass with
+     zero real consumers — exactly the pattern this project's standing
+     rule exists to prevent (the same reasoning as Alternative 3 below).
+     Revisit when Phase 4 (external identity/context) has a real
+     consumer for it, not before.
+   - *Execution fingerprint*: **shipped, as a string, not a structured
+     descriptor.** `Provider.execution_fingerprint` is a new property
+     (concrete default `""` on the ABC in
+     [`core/provider.py`](../../sceneforge/core/provider.py), and on the
+     structural `Provider`/`AsyncProvider` protocols) that a provider
+     overrides when its constructor-time configuration changes output.
+     `WhisperTranscribeProvider` overrides it with a hash of its
+     `transcribe_kwargs` — the concrete case the implementation review
+     reproduced live (two differently configured instances colliding
+     under the old key). Folded into `content_key()` as a fourth
+     parameter, defaulting to `""` for backward compatibility. A fully
+     structured descriptor (separate model-ID, prompt-version,
+     tool-version fields rather than one opaque string) is deferred until
+     a second provider actually needs to distinguish those dimensions
+     independently — one real case (Whisper) does not yet justify the
+     structure.
+   - `Media.evolve()`'s interaction with content identity: **not
+     separately tested.** Content identity depends only on
+     `metadata["source"]` and `media.name`, neither of which a typical
+     metadata-only `evolve()` call changes, so the stated rule
+     ("metadata-only evolution preserves identity, changed bytes don't")
+     holds by construction today. No dedicated regression test exists yet
+     for the case where `evolve()` itself changes `source`.
+   - This was a breaking, cache-invalidating change to `content_key()`,
+     as accepted. Every call site (`Pipeline`, `AsyncPipeline`) and every
+     test constructing a `content_key()` by hand were updated; no
+     migration tooling was built, per the original decision.
+   - Also required, not anticipated in the original decision: the
+     structural `Provider` protocol
+     ([`core/provider_protocol.py`](../../sceneforge/core/provider_protocol.py))
+     and `AsyncProvider` protocol
+     ([`core/async_provider.py`](../../sceneforge/core/async_provider.py))
+     both needed the new property added explicitly — these are separate
+     from the `Provider` ABC contrib providers subclass, and Pipeline
+     type-checks against the structural one. Every duck-typed test fixture
+     satisfying either protocol needed updating too (three fixtures now
+     subclass the ABC instead of hand-duplicating its shape, matching how
+     real contrib providers already do it).
 
-3. **A minimal typed evidence contract**: an `EvidenceAnchor` (edition,
-   stream, presentation interval or point, optional spatial region, durable
-   asset reference) and an `EvidenceLink`, plus artifact lookup by ID and,
-   at minimum, by media. An `EvidenceLink`'s `source`/`target` are not bare
-   UUIDs — each is a `(kind, id)` pair (`kind` distinguishing at least
-   `artifact`, `entity`, `external_claim`, and `revision`), because a raw
-   UUID's meaning already varies by builder in the current `Entity.parents`
+3. **A minimal typed evidence contract.** **Shipped.**
+   [`EvidenceAnchor`](../../sceneforge/core/evidence.py) (media, stream,
+   presentation interval or point, optional spatial region, durable asset
+   reference, reserved edition-identity field) and
+   [`EvidenceLink`](../../sceneforge/core/evidence.py), plus artifact
+   lookup by ID (`find_artifact_by_id()`) and by media
+   (`find_artifacts_by_media()`) in
+   [`core/storage.py`](../../sceneforge/core/storage.py), built on a new
+   `ArtifactStore.keys()` (the enumeration method `EntityStore` already
+   had, per ADR-0014 — previously the one asymmetry between the two
+   stores). An `EvidenceLink`'s `source`/`target` are `Reference`
+   `(kind, id)` pairs, not bare UUIDs — `kind` distinguishes `artifact`,
+   `entity`, `external_claim`, and `revision` — because a raw UUID's
+   meaning already varies by builder in the current `Entity.parents`
    field, and repeating that ambiguity in the new evidence contract would
-   reproduce the exact problem this ADR exists to fix. `relation` is typed,
-   e.g. `supports`/`derived_from`. No graph database — an indexed or
-   SQLite-backed spike is sufficient, consistent with the standing rule in
+   reproduce the exact problem this ADR exists to fix. `relation` is
+   typed: `supports`/`derived_from` only, the two named explicitly here —
+   more relations are added only when a real builder needs one, not
+   speculatively. No graph database — the lookup is naive iteration over
+   `ArtifactStore.keys()`, consistent with the standing rule in
    ADR-0014, ADR-0019, and ADR-0021 that a dedicated graph backend waits
    for a measured query that plain iteration cannot answer.
 
-4. **Separate the cache role from the evidence role.** `FileArtifactStore`
-   and `FileEntityStore` remain a legitimate evictable, overwritable
-   computation cache. A durable, append-oriented evidence/knowledge record
-   concept — with explicit revision and supersession semantics — is a
-   distinct thing, even if it is initially backed by the same file format.
-   Conflating the two today means correcting an earlier result and evicting
-   a stale cache entry look identical, which the research document's
-   evidence-permanence requirement does not allow.
+   **Not shipped, deliberately:** persistence for `EvidenceAnchor`/
+   `EvidenceLink` themselves. No builder produces either type yet, so
+   adding JSON round-trip support now (the same fix `Provenance` needed
+   in item 1) would be solving a problem with no real caller — add it
+   when a real Fact/Event builder needs to store one, matching this
+   project's standing rule against building ahead of a real consumer.
 
-5. **A minimal `AnalysisRun` manifest** recording, per stage: provider,
-   model, and configuration versions; which intervals/modalities were
-   attempted, skipped, or failed; and whether each result was a cache hit
-   or a fresh run. This is the smallest artifact that lets a report later
-   compute real coverage instead of inferring it from whichever outputs
-   happen to exist.
+4. **Separate the cache role from the evidence role.** **Shipped.**
+   `FileArtifactStore` and `FileEntityStore` are unchanged — they remain
+   the legitimate evictable, overwritable computation cache.
+   [`KnowledgeRecordStore`](../../sceneforge/knowledge/storage.py) (with
+   `FileKnowledgeRecordStore` and `InMemoryKnowledgeRecordStore`
+   implementations) is the distinct durable, append-only counterpart:
+   `append()` always creates a new numbered revision file and never
+   overwrites or deletes one; there is no `put`/`delete` on this store on
+   purpose. `retract()` records that a conclusion is withdrawn as a new,
+   dated revision rather than erasing the original — "we no longer
+   believe this" is itself a durable fact, not a silent disappearance.
+   Initially backed by the same JSON-per-file format as `FileEntityStore`,
+   as the ADR anticipated — the roles are what changed, not (yet) the
+   storage technology. No builder produces `KnowledgeRecord`s yet, so
+   this is exercised directly in `tests/knowledge/test_knowledge_record_store.py`
+   rather than through a real Fact/Event pipeline.
+
+5. **A minimal `AnalysisRun` manifest.** **Shipped.**
+   [`AnalysisRun`/`StageRecord`/`StageOutcome`](../../sceneforge/runtime/analysis_run.py)
+   (`ATTEMPTED`/`SKIPPED`/`FAILED`), wired as an opt-in `analysis_run`
+   parameter into `Pipeline.run_detailed()` and
+   `AsyncPipeline.run_detailed()`/`run_many()` — real integration, not a
+   standalone type nobody produces: it taps the cache-hit/fresh-run
+   distinction and retry/duration data Pipeline already computed
+   internally, and adds a catch-and-reraise around
+   `IncompatibleMediaError` specifically to capture the `SKIPPED` case.
+   Recording never suppresses the underlying exception — it's a side
+   channel, not a way to swallow a skip or a failure. `run_many()`
+   shares one manifest across a whole concurrent batch. See
+   `tests/runtime/test_analysis_run.py` and the integration tests in
+   `tests/core/test_pipeline_resilience.py` /
+   `tests/core/test_async_pipeline.py`, which exercise all four real
+   outcomes end to end rather than only the type in isolation.
+
+   One design call made during implementation, not specified verbatim
+   in this ADR: `AnalysisRun.coverage()` (a dict of outcome → count) was
+   added as the smallest query that makes "compute real coverage" (this
+   item's own stated purpose) concrete rather than aspirational. This is
+   slightly more than pure recording, which is otherwise this project's
+   default posture toward new query surface — justified here because
+   "coverage" is the word this ADR itself uses to describe why the item
+   exists, not a speculative extension beyond it.
+
+   **Not shipped as originally described:** `StageRecord` carries
+   `provider_name`/`provider_version`, not a separate "model version" —
+   no shipped provider distinguishes its own version from an underlying
+   model's version yet (`WhisperTranscribeProvider`'s
+   `execution_fingerprint`, not `version`, is where model configuration
+   already lives, per item 2). Revisit if a real provider needs that
+   distinction. There is also still no persistence for `AnalysisRun`
+   itself, for the same reason as `EvidenceAnchor`/`EvidenceLink` in item
+   3 — no real Application composes one multi-provider session yet.
 
 **Explicitly deferred, not forgotten:** provider-neutral artifact contracts
 (interchangeable captioners/object-detectors; the Runtime decoding-boundary
 honesty gap). Normalizing an interface from a single real implementation is
 the speculative abstraction this project has consistently avoided (see the
 pattern behind ADR-0011, ADR-0016, ADR-0018: build the second real case,
-then extract the shared shape). These are revisited once the Phase 1
-captioning/object-detection provider supplies that second concrete case,
-   not before a second implementation of the same normalized capability gives
-   the abstraction two real cases to fit. The first Phase-1 caption/object
-   provider may define its concrete output without claiming interchangeability.
+then extract the shared shape). The Phase 1 captioning/object-detection
+provider may define its own concrete output without claiming
+interchangeability; normalization is revisited only once a second real
+implementation of the same capability gives the abstraction two real cases
+to fit, not before.
 
 **Also explicitly deferred:** deep immutability of nested `Artifact`/`Entity`
 payloads. `MappingProxyType` currently protects only the outer metadata
@@ -150,43 +226,68 @@ mutated in place, confirmed by direct reproduction. This is a real defect,
 but item 4 above (separating the evictable cache from durable evidence) does
 not fix it by itself, and fixing it generally means either recursively
 freezing arbitrary nested structures or moving to typed frozen payloads —
-   both are more naturally sized with the first typed Fact payload rather than
-   by recursively freezing today's loosely-typed `dict[str, Any]` metadata
-   blobs in place. The first Fact cannot be declared production-ready until its
-   own typed payload is deeply immutable. This remains tracked in
-   `PROJECT_STATE.md` rather than being conflated with item 4.
+both are more naturally sized with the first typed Fact payload rather than
+by recursively freezing today's loosely-typed `dict[str, Any]` metadata
+blobs in place. The first Fact cannot be declared production-ready until its
+own typed payload is deeply immutable. This remains tracked in
+`PROJECT_STATE.md` rather than being conflated with item 4.
 
 ## Consequences
 
 - This ADR amends the caching-identity portion of
   [ADR-0008](0008-artifact-persistence.md): `content_key()`'s basis of
-  "media identity + provider name + provider version" is superseded by item
-  2's content identity plus execution fingerprint once that item ships.
-  Edition identity remains provenance/query scope unless a computation
-  explicitly consumes it. ADR-0008's `ArtifactStore`/`FileArtifactStore`/
-  `InMemoryArtifactStore` protocol and persistence design are unaffected and
-  remain in force — only the key basis changes.
+  "media identity + provider name + provider version" is now, as shipped,
+  "content identity + provider name + provider version + execution
+  fingerprint." No `Media` field carries edition identity yet — that part
+  of item 2 remains deferred, see item 2 above — so there is no edition
+  scope to reason about until it exists. ADR-0008's
+  `ArtifactStore`/`FileArtifactStore`/`InMemoryArtifactStore` protocol and
+  persistence design are unaffected and remain in force — only the key
+  basis changes.
 - ADR-0008's open question ("what should `Media.evolve()` mean for cache
   invalidation across multiple enrichers?", tracked as an Open RFC in
-  `PROJECT_STATE.md`) is resolved by item 2: metadata-only evolution of the
-  same bytes preserves content identity; new or transformed bytes require a
-  new identity; output-affecting evolved values participate in the execution
-  fingerprint. The implementation must enforce this decision, but the
-  architectural question is no longer open.
+  `PROJECT_STATE.md`) is resolved in the sense that content identity no
+  longer derives from `Media.id`, so `evolve()` calls that only merge
+  descriptive metadata no longer affect the cache key at all (identity
+  depends only on `metadata["source"]` and `media.name`). The stronger
+  claim — that changed/transformed bytes reliably produce a new identity
+  via `evolve()` specifically — holds by construction but has no dedicated
+  regression test yet.
 - Phase 1 (the captioning/object-detection provider named in
-  `NEXT_TASK.md`) does not start until Phase 0 items 2–5 are real and
-  tested. This delays the previously announced next task, but avoids
-  building the first Fact on an identity and evidence foundation already
-  known, by direct reproduction, to be unsound.
-- `content_key()`'s change is breaking. Every existing provider and its
-  tests will need updating when that follow-on change lands; this is
-  tracked as a separate task from this ADR.
-- The evidence-anchor/lookup work and the cache/evidence split add new
-  types but stay index-only, consistent with the project's standing
-  anti-graph-database rule.
-- `NEXT_TASK.md` and `PROJECT_STATE.md` should be updated to reflect Phase
-  0 as the current objective in place of the captioning/object-detection
-  provider, and to record that `Entity.provenance` now round-trips.
+  `NEXT_TASK.md`) is unblocked: all five Phase-0 items have shipped.
+- `content_key()`'s change was breaking, as accepted. Every existing
+  provider call site (`Pipeline`, `AsyncPipeline`) and every test
+  constructing a `content_key()` by hand were updated. Three duck-typed
+  test fixtures across `tests/core/test_pipeline_resilience.py` needed to
+  start subclassing the `Provider` ABC instead of hand-duplicating its
+  shape, once `execution_fingerprint` became part of the structural
+  contract both `Provider` protocols expose.
+- The evidence-anchor/lookup work stays index-only, consistent with the
+  project's standing anti-graph-database rule. The cache/evidence split
+  (item 4) means a future builder *can* record an `EvidenceLink` durably
+  via `KnowledgeRecordStore` so it outlives an evictable
+  `FileArtifactStore` cache entry it references — but nothing enforces
+  that yet, since no builder does either today. `KnowledgeRecordStore`
+  is a distinct type from `EntityStore`, not a constraint layered on top
+  of it, so nothing stops a future builder from writing an
+  `EvidenceLink` into the wrong store; that discipline is a code-review
+  concern until (if ever) a real misuse motivates enforcing it in types.
+- `Pipeline.run_detailed()`/`AsyncPipeline.run_detailed()`'s public
+  signatures grew a fourth optional parameter (`analysis_run`), the
+  second breaking-adjacent-but-additive signature change in this ADR
+  (after `execution_fingerprint` in item 2). Both are backward
+  compatible — omitting the new parameter reproduces prior behavior
+  exactly, verified directly (`test_pipeline_run_without_analysis_run_is_unaffected`,
+  `test_async_pipeline_run_without_analysis_run_is_unaffected`) — but
+  Pipeline's constructor/method surface is accumulating optional
+  parameters (`capability_registry`, `enricher`, `store`, `max_retries`,
+  `retry_backoff_seconds`, now `analysis_run`) across five ADRs. Worth a
+  future look at whether that surface should be grouped (a
+  `PipelineOptions` object or similar) once a sixth reason to grow it
+  appears, rather than continuing to add positional-adjacent keyword
+  parameters one ADR at a time.
+- `NEXT_TASK.md` and `PROJECT_STATE.md` are updated to reflect all five
+  Phase-0 items as shipped, and Phase 1 as the current objective.
 
 ## Alternatives Considered
 

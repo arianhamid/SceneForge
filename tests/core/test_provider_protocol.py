@@ -24,11 +24,11 @@ def test_provider_is_abstract():
 def test_runtime_checkable():
     """
     A class must implement the *whole* structural contract -- name,
-    version, capabilities, and run() -- to satisfy Provider, since
-    that's everything Pipeline actually touches. A run()-only class
-    is not a usable Provider even though it "looks" like one; see
-    test_run_only_class_is_not_a_provider below for the failure mode
-    this protects against.
+    version, capabilities, execution_fingerprint, and run() -- to
+    satisfy Provider, since that's everything Pipeline actually
+    touches. A run()-only class is not a usable Provider even though
+    it "looks" like one; see test_run_only_class_is_not_a_provider
+    below for the failure mode this protects against.
     """
 
     class ConcreteProvider:
@@ -43,6 +43,10 @@ def test_runtime_checkable():
         @property
         def capabilities(self) -> frozenset[Capability]:
             return frozenset()
+
+        @property
+        def execution_fingerprint(self) -> str:
+            return ""
 
         def run(self, media: Media) -> list[Artifact]:
             return []

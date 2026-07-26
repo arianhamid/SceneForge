@@ -1,18 +1,29 @@
+<style>
+:root {
+  direction: rtl;
+  text-align: right;
+}
+code, pre {
+  direction: ltr;
+  text-align: left;
+}
+</style>
+
 # ۶. راهنمای هفت Provider قابلیت‌محور پروژه
 
 تا امروز، هفت Provider واقعیِ قابلیت‌محور (نه ساختگی) در پروژه وجود دارد. Providerهای ابزاری مثل `MediaHashProvider` جدا از این شمارش‌اند. هرکدام از این هفت مورد یک الگوی متفاوت برای «از کجا مدل/ابزارش را می‌آورد» دارند — و این تفاوت، درسی مهم درباره‌ی طراحی پروژه است.
 
 ## جدول کلی
 
-| Provider | قابلیت | ابزار پشت‌صحنه | نیاز به دانلود وزن مدل؟ |
-|---|---|---|---|
-| `FFmpegFrameExtractionProvider` | `FRAME_EXTRACTION` | دستور خط‌فرمان `ffmpeg` | خیر |
-| `PySceneDetectProvider` | `DETECT_SCENES` | کتابخانه‌ی `scenedetect` (الگوریتمی) | خیر |
-| `WhisperTranscribeProvider` | `TRANSCRIBE` | کتابخانه‌ی `faster-whisper` | **بله** |
-| `OpenCVFaceDetectionProvider` | `FACE_DETECTION` | Haar Cascade در `opencv` | خیر (وزن‌ها همراه پکیج نصب می‌شوند) |
-| `TesseractOCRProvider` | `OCR` | موتور `tesseract-ocr` | خیر (داده‌ی زبان همراه پکیج نصب می‌شود) |
-| `TransformersCaptionProvider` | `CAPTION` | یک pipeline تزریق‌شده‌ی `transformers` (`image-text-to-text`) | **بله** (این محیط دسترسی به آن ندارد) |
-| `TransformersObjectDetectionProvider` | `OBJECT_DETECTION` | یک pipeline تزریق‌شده‌ی `transformers` (`object-detection`) | **بله** (این محیط دسترسی به آن ندارد) |
+| Provider                              | قابلیت             | ابزار پشت‌صحنه                                                | نیاز به دانلود وزن مدل؟                 |
+| ------------------------------------- | ------------------ | ------------------------------------------------------------- | --------------------------------------- |
+| `FFmpegFrameExtractionProvider`       | `FRAME_EXTRACTION` | دستور خط‌فرمان `ffmpeg`                                       | خیر                                     |
+| `PySceneDetectProvider`               | `DETECT_SCENES`    | کتابخانه‌ی `scenedetect` (الگوریتمی)                          | خیر                                     |
+| `WhisperTranscribeProvider`           | `TRANSCRIBE`       | کتابخانه‌ی `faster-whisper`                                   | **بله**                                 |
+| `OpenCVFaceDetectionProvider`         | `FACE_DETECTION`   | Haar Cascade در `opencv`                                      | خیر (وزن‌ها همراه پکیج نصب می‌شوند)     |
+| `TesseractOCRProvider`                | `OCR`              | موتور `tesseract-ocr`                                         | خیر (داده‌ی زبان همراه پکیج نصب می‌شود) |
+| `TransformersCaptionProvider`         | `CAPTION`          | یک pipeline تزریق‌شده‌ی `transformers` (`image-text-to-text`) | **بله** (این محیط دسترسی به آن ندارد)   |
+| `TransformersObjectDetectionProvider` | `OBJECT_DETECTION` | یک pipeline تزریق‌شده‌ی `transformers` (`object-detection`)   | **بله** (این محیط دسترسی به آن ندارد)   |
 
 ## نکته‌ی مهم: «مدل‌محور بودن» به معنی «نیاز به دانلود» نیست
 
@@ -62,7 +73,7 @@ class TransformersCaptionProvider(Provider):
 
 ### یک باگ واقعی که هنگام نوشتن این دو Provider پیدا شد
 
-`FaceDetectionArtifact` و `OCRTextArtifact` از قبل فیلد `source_frame_path` را داشتند (برای تطبیق با صحنه، طبق الگویی که پایین‌تر توضیح می‌دهیم). اما وقتی `TransformersObjectDetectionProvider` نوشته شد، مشخص شد که این فیلد را *اعلام* کرده (در `ObjectDetectionArtifact`) اما هیچ‌وقت واقعاً پر نمی‌کرد — همیشه یک رشته‌ی خالی `""` می‌ماند، بدون این‌که هیچ تستی این را بگیرد. `CaptionArtifact` هم اصلاً این فیلد را نداشت. هر دو در همان زمان اصلاح شدند تا با الگوی مشترک هماهنگ باشند. درسش: **داشتن یک فیلد در تعریف کلاس، تضمین نمی‌کند که کد واقعاً آن را پر می‌کند** — این دقیقاً همان چیزی است که تست‌های یکپارچگی (integration test) با داده‌ی واقعی برای گرفتنش لازم‌اند، نه فقط تست واحد با داده‌ی ساختگی.
+`FaceDetectionArtifact` و `OCRTextArtifact` از قبل فیلد `source_frame_path` را داشتند (برای تطبیق با صحنه، طبق الگویی که پایین‌تر توضیح می‌دهیم). اما وقتی `TransformersObjectDetectionProvider` نوشته شد، مشخص شد که این فیلد را _اعلام_ کرده (در `ObjectDetectionArtifact`) اما هیچ‌وقت واقعاً پر نمی‌کرد — همیشه یک رشته‌ی خالی `""` می‌ماند، بدون این‌که هیچ تستی این را بگیرد. `CaptionArtifact` هم اصلاً این فیلد را نداشت. هر دو در همان زمان اصلاح شدند تا با الگوی مشترک هماهنگ باشند. درسش: **داشتن یک فیلد در تعریف کلاس، تضمین نمی‌کند که کد واقعاً آن را پر می‌کند** — این دقیقاً همان چیزی است که تست‌های یکپارچگی (integration test) با داده‌ی واقعی برای گرفتنش لازم‌اند، نه فقط تست واحد با داده‌ی ساختگی.
 
 ## نگاه دقیق به یک Provider واقعی: `FFmpegFrameExtractionProvider`
 

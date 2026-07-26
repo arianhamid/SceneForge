@@ -1,3 +1,14 @@
+<style>
+:root {
+  direction: rtl;
+  text-align: right;
+}
+code, pre {
+  direction: ltr;
+  text-align: left;
+}
+</style>
+
 # ۲. نمای کلی معماری
 
 ## نمودار کلی
@@ -79,7 +90,7 @@ Entity ها    →  RelationshipBuilder.relate()  →  Entity ها   (مثال: 
 - **`content_key()` دیگر از `media.id` استفاده نمی‌کند** — چون آن شناسه تصادفی بود. حالا از هش واقعیِ محتوای فایل استفاده می‌کند (جزئیات کامل در فایل ۴).
 - **`Provenance` حالا واقعاً در فایل ذخیره می‌شود** — قبلاً این کار با خطا شکست می‌خورد.
 - **`EvidenceAnchor` و `EvidenceLink`** (`sceneforge/core/evidence.py`) — یک قرارداد تایپ‌شده برای «این ادعا از کدام بخش دقیق کدام Artifact آمده». هنوز هیچ سازنده‌ای این‌ها را تولید نمی‌کند (چون `Entity.parents` برای نیازهای فعلی کافی بوده)، اما زیرساختش آماده است.
-- **`KnowledgeRecordStore`** (`sceneforge/knowledge/storage.py`) — جدا از کشِ قابل‌حذفِ `EntityStore`/`ArtifactStore`، یک انبار *فقط‌افزوده* (append-only) برای نتیجه‌های دانشیِ ماندگار؛ هیچ‌وقت چیزی را جای خودش رونویسی یا حذف نمی‌کند.
+- **`KnowledgeRecordStore`** (`sceneforge/knowledge/storage.py`) — جدا از کشِ قابل‌حذفِ `EntityStore`/`ArtifactStore`، یک انبار _فقط‌افزوده_ (append-only) برای نتیجه‌های دانشیِ ماندگار؛ هیچ‌وقت چیزی را جای خودش رونویسی یا حذف نمی‌کند.
 - **`AnalysisRun`** (`sceneforge/runtime/analysis_run.py`) — نتیجه‌ی هر اجرای Provider را به‌شکل `ATTEMPTED`/`SKIPPED`/`FAILED` در یک manifest اختیاری جمع می‌کند؛ `cache_hit` یک پرچم جدا روی رکورد `ATTEMPTED` است و خودِ manifest هنوز persistence ندارد.
 
 یک محدودیت مهم همچنان باز است: جداسازی کش از رکورد ماندگار، تغییرپذیری لیست/دیکشنری‌های تودرتوی `metadata` را حل نکرده است. جزئیات کامل پنج کار Phase 0 و این بخش حل‌نشده، در فایل ۱ و فایل ۷ آمده.

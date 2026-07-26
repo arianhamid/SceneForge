@@ -1,3 +1,14 @@
+<style>
+:root {
+  direction: rtl;
+  text-align: right;
+}
+code, pre {
+  direction: ltr;
+  text-align: left;
+}
+</style>
+
 # ۹. واژه‌نامه انگلیسی به فارسی
 
 این واژه‌نامه معادل فارسیِ [`docs/GLOSSARY.md`](../GLOSSARY.md) اصلی است، با توضیح بیشتر. در کد و مستندات انگلیسی، همیشه از نام انگلیسی استفاده کن — این‌جا فقط برای فهمیدن معنا است.
@@ -58,7 +69,7 @@
 
 **Execution Fingerprint** — رشته‌ای که یک Provider می‌تواند override کند تا تنظیمات داخلی‌اش (نه فقط نام و نسخه) هم در کلید کش دخیل باشد؛ بخشی از راه‌حل باگ کلید کش (فایل ۴ و ۱۰، ADR-0024).
 
-**Content Key / `content_key()`** — رشته‌ی یکتایی که از هویتِ *محتوای* یک Media (نه شناسه‌ی تصادفی‌اش) + نام/نسخه‌ی Provider + Execution Fingerprint ساخته می‌شود؛ پایه‌ی این‌که «یک فیلم فقط یک‌بار تحلیل شود». تا قبل از ADR-0024، به‌اشتباه از `media.id` تصادفی استفاده می‌کرد.
+**Content Key / `content_key()`** — رشته‌ی یکتایی که از هویتِ _محتوای_ یک Media (نه شناسه‌ی تصادفی‌اش) + نام/نسخه‌ی Provider + Execution Fingerprint ساخته می‌شود؛ پایه‌ی این‌که «یک فیلم فقط یک‌بار تحلیل شود». تا قبل از ADR-0024، به‌اشتباه از `media.id` تصادفی استفاده می‌کرد.
 
 **Media Content Identity** — هویت پایدار یک Media، مستقل از `media.id` تصادفی: اگر فایل واقعی روی دیسک باشد، هش واقعیِ بایت‌های فایل؛ در غیر این‌صورت (رسانه‌ی مصنوعی)، هش نام آن.
 
@@ -76,7 +87,7 @@
 
 **AnalysisRun** — رکوردی که outcome هر مرحله را به‌شکل `ATTEMPTED`/`SKIPPED`/`FAILED` و نسخه‌ی Provider ثبت می‌کند؛ cache hit یک پرچم جدا روی `StageRecord` است. هنوز ماندگار (persistent) نیست.
 
-**Knowledge Record Store (`KnowledgeRecordStore`)** — انبار *فقط‌افزوده* (append-only) برای نتیجه‌های دانشیِ ماندگار، جدا از کشِ قابل‌حذفِ `EntityStore`/`ArtifactStore`. `append()` همیشه نسخه‌ی جدید می‌سازد؛ `retract()` رسماً یک نتیجه را «دیگر باور نداریم» علامت می‌زند، بدون حذف نسخه‌ی قبلی.
+**Knowledge Record Store (`KnowledgeRecordStore`)** — انبار _فقط‌افزوده_ (append-only) برای نتیجه‌های دانشیِ ماندگار، جدا از کشِ قابل‌حذفِ `EntityStore`/`ArtifactStore`. `append()` همیشه نسخه‌ی جدید می‌سازد؛ `retract()` رسماً یک نتیجه را «دیگر باور نداریم» علامت می‌زند، بدون حذف نسخه‌ی قبلی.
 
 ---
 

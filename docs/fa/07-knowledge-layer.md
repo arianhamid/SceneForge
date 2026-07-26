@@ -1,8 +1,19 @@
+<style>
+:root {
+  direction: rtl;
+  text-align: right;
+}
+code, pre {
+  direction: ltr;
+  text-align: left;
+}
+</style>
+
 # ۷. لایه‌ی دانش — از Artifact تا فهمیدن
 
 ## Entity چیست؟
 
-`Entity` معادل `Artifact` در لایه‌ی دانش است — اما با یک فرق مهم: `Artifact` نتیجه‌ی *یک* Provider است، `Entity` نتیجه‌ی *ترکیب چند* Artifact (احتمالاً از چند Provider مختلف) است.
+`Entity` معادل `Artifact` در لایه‌ی دانش است — اما با یک فرق مهم: `Artifact` نتیجه‌ی _یک_ Provider است، `Entity` نتیجه‌ی _ترکیب چند_ Artifact (احتمالاً از چند Provider مختلف) است.
 
 ```python
 @dataclass(frozen=True, slots=True)
@@ -65,7 +76,7 @@ merged[0].metadata["scene_face"]["total_faces"]  # تعداد چهره
 
 ### ۶. `FactExtractionBuilder` — اولین‌بار که یک «حقیقت» ساخته می‌شود
 
-تا این‌جا، همه‌ی سازنده‌ها فقط Artifact های خام را *بازآرایی* می‌کردند (مثلاً «این قاب‌ها مال این صحنه‌اند»). `FactExtractionBuilder` اولین سازنده‌ای است که واقعاً یک لایه بالاتر می‌رود:
+تا این‌جا، همه‌ی سازنده‌ها فقط Artifact های خام را _بازآرایی_ می‌کردند (مثلاً «این قاب‌ها مال این صحنه‌اند»). `FactExtractionBuilder` اولین سازنده‌ای است که واقعاً یک لایه بالاتر می‌رود:
 
 ```python
 fact_entities = FactExtractionBuilder().build(caption_artifacts + detection_artifacts)

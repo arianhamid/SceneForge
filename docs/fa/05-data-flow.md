@@ -1,3 +1,14 @@
+<style>
+:root {
+  direction: rtl;
+  text-align: right;
+}
+code, pre {
+  direction: ltr;
+  text-align: left;
+}
+</style>
+
 # ۵. جریان کامل داده — از فایل ویدیو تا دانش
 
 در این فایل، اسکریپت واقعی `examples/end_to_end/analyze_video.py` را قدم‌به‌قدم دنبال می‌کنیم. این بهترین راه برای فهمیدن این است که همه‌ی مفاهیمی که تا الان خواندی، چطور کنار هم کار می‌کنند.

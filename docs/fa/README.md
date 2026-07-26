@@ -1,3 +1,14 @@
+<style>
+:root {
+  direction: rtl;
+  text-align: right;
+}
+code, pre {
+  direction: ltr;
+  text-align: left;
+}
+</style>
+
 # مستندات فارسی SceneForge
 
 این پوشه برای کسانی نوشته شده که می‌خواهند پروژه SceneForge را از صفر، عمیق و دقیق یاد بگیرند — چه از نظر معماری و چه از نظر کدهای پایتون. این مستندات جایگزین مستندات انگلیسی اصلی (`docs/`) نیست؛ مکمل آن است و برای یادگیری نوشته شده، نه فقط مرجع سریع.
@@ -14,18 +25,18 @@
 
 ## ترتیب پیشنهادی مطالعه
 
-| # | فایل | موضوع |
-|---|------|-------|
-| ۱ | [`01-vision.md`](01-vision.md) | چشم‌انداز، فلسفه و اصول پروژه — چرا این‌طور ساخته شده |
-| ۲ | [`02-architecture-overview.md`](02-architecture-overview.md) | نمای کلی معماری لایه‌ای — از ویدیوی خام تا دانش |
-| ۳ | [`03-python-basics.md`](03-python-basics.md) | مفاهیم پایتونی استفاده‌شده در پروژه (dataclass، type hint، Protocol و...) |
-| ۴ | [`04-core-concepts.md`](04-core-concepts.md) | مفاهیم پایه: Media، Artifact، Provider، Pipeline، Capability |
-| ۵ | [`05-data-flow.md`](05-data-flow.md) | جریان کامل داده — قدم‌به‌قدم اجرای واقعی یک اسکریپت |
-| ۶ | [`06-providers-guide.md`](06-providers-guide.md) | هفت Provider قابلیت‌محور پروژه و نحوه کارشان |
-| ۷ | [`07-knowledge-layer.md`](07-knowledge-layer.md) | لایه دانش — Entity، KnowledgeBuilder، و چشم‌انداز «مدل جهان» |
-| ۸ | [`08-how-to-extend.md`](08-how-to-extend.md) | چگونه یک Provider یا Builder جدید اضافه کنیم |
-| ۹ | [`09-glossary.md`](09-glossary.md) | واژه‌نامه انگلیسی به فارسی |
-| ۱۰ | [`10-decision-log.md`](10-decision-log.md) | خلاصه فارسی هر ۲۴ تصمیم معماری (ADR) و درس هرکدام |
+| #   | فایل                                                         | موضوع                                                                     |
+| --- | ------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| ۱   | [`01-vision.md`](01-vision.md)                               | چشم‌انداز، فلسفه و اصول پروژه — چرا این‌طور ساخته شده                     |
+| ۲   | [`02-architecture-overview.md`](02-architecture-overview.md) | نمای کلی معماری لایه‌ای — از ویدیوی خام تا دانش                           |
+| ۳   | [`03-python-basics.md`](03-python-basics.md)                 | مفاهیم پایتونی استفاده‌شده در پروژه (dataclass، type hint، Protocol و...) |
+| ۴   | [`04-core-concepts.md`](04-core-concepts.md)                 | مفاهیم پایه: Media، Artifact، Provider، Pipeline، Capability              |
+| ۵   | [`05-data-flow.md`](05-data-flow.md)                         | جریان کامل داده — قدم‌به‌قدم اجرای واقعی یک اسکریپت                       |
+| ۶   | [`06-providers-guide.md`](06-providers-guide.md)             | هفت Provider قابلیت‌محور پروژه و نحوه کارشان                              |
+| ۷   | [`07-knowledge-layer.md`](07-knowledge-layer.md)             | لایه دانش — Entity، KnowledgeBuilder، و چشم‌انداز «مدل جهان»              |
+| ۸   | [`08-how-to-extend.md`](08-how-to-extend.md)                 | چگونه یک Provider یا Builder جدید اضافه کنیم                              |
+| ۹   | [`09-glossary.md`](09-glossary.md)                           | واژه‌نامه انگلیسی به فارسی                                                |
+| ۱۰  | [`10-decision-log.md`](10-decision-log.md)                   | خلاصه فارسی هر ۲۴ تصمیم معماری (ADR) و درس هرکدام                         |
 
 ## نکته درباره اصطلاحات
 

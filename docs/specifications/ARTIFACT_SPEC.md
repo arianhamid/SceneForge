@@ -85,6 +85,7 @@ base `Artifact`) requires registering it once:
 ```python
 from sceneforge.core.storage import register_artifact_type
 
+
 @register_artifact_type
 @dataclass(frozen=True, slots=True)
 class MyArtifact(Artifact[str]):

@@ -1,6 +1,6 @@
-# ۶. راهنمای پنج Provider واقعی پروژه
+# ۶. راهنمای هفت Provider قابلیت‌محور پروژه
 
-تا امروز، پنج Provider واقعی (نه ساختگی) در پروژه وجود دارد. هرکدام یک الگوی متفاوت برای «از کجا مدل/ابزارش را می‌آورد» دارند — و این تفاوت، درسی مهم درباره‌ی طراحی پروژه است.
+تا امروز، هفت Provider واقعیِ قابلیت‌محور (نه ساختگی) در پروژه وجود دارد. Providerهای ابزاری مثل `MediaHashProvider` جدا از این شمارش‌اند. هرکدام از این هفت مورد یک الگوی متفاوت برای «از کجا مدل/ابزارش را می‌آورد» دارند — و این تفاوت، درسی مهم درباره‌ی طراحی پروژه است.
 
 ## جدول کلی
 
@@ -11,6 +11,8 @@
 | `WhisperTranscribeProvider` | `TRANSCRIBE` | کتابخانه‌ی `faster-whisper` | **بله** |
 | `OpenCVFaceDetectionProvider` | `FACE_DETECTION` | Haar Cascade در `opencv` | خیر (وزن‌ها همراه پکیج نصب می‌شوند) |
 | `TesseractOCRProvider` | `OCR` | موتور `tesseract-ocr` | خیر (داده‌ی زبان همراه پکیج نصب می‌شود) |
+| `TransformersCaptionProvider` | `CAPTION` | یک pipeline تزریق‌شده‌ی `transformers` (`image-text-to-text`) | **بله** (این محیط دسترسی به آن ندارد) |
+| `TransformersObjectDetectionProvider` | `OBJECT_DETECTION` | یک pipeline تزریق‌شده‌ی `transformers` (`object-detection`) | **بله** (این محیط دسترسی به آن ندارد) |
 
 ## نکته‌ی مهم: «مدل‌محور بودن» به معنی «نیاز به دانلود» نیست
 
@@ -38,10 +40,29 @@ class FakeWhisperModel:
     def transcribe(self, audio, **kwargs):
         return iter([FakeSegment(0.0, 2.0, "سلام")]), FakeInfo()
 
+
 provider = WhisperTranscribeProvider(FakeWhisperModel())
 ```
 
 این یعنی می‌توانیم منطق داخلی Provider (مثل «هر سگمنت را چطور به Artifact تبدیل کن») را کامل تست کنیم، بدون هیچ وابستگی به اینترنت یا GPU.
+
+## دومین الگوی تزریق وابستگی: `TransformersCaptionProvider`
+
+همان الگوی `WhisperTranscribeProvider` (تزریق مدل، نه ساختنش داخل Provider) دوباره برای دو Provider جدید استفاده شد — این‌بار برای رسیدن به لایه‌ی «حقایق» (Facts):
+
+```python
+class TransformersCaptionProvider(Provider):
+    def __init__(self, pipe: ImageTextToTextPipelineProtocol) -> None:
+        self._pipe = pipe
+```
+
+نکته‌ی طراحی مهم: این Provider فقط `ImageMedia` قبول می‌کند، نه `VideoMedia` — با این‌که `Capability.CAPTION` برای هر دو ثبت شده. دلیلش این است که «توضیح‌دادن کل یک ویدیو» نیاز به یک تصمیم دارد («کدام قاب یا قاب‌ها را توضیح بدهم؟») که این Provider عمداً نمی‌گیرد؛ آن تصمیم را به‌جای این‌که خودش حدس بزند، به لایه‌ای که قاب‌ها را استخراج می‌کند (`sceneforge.contrib.ffmpeg`) واگذار می‌کند.
+
+`TransformersObjectDetectionProvider` هم دقیقاً همین الگو را برای `Capability.OBJECT_DETECTION` تکرار می‌کند.
+
+### یک باگ واقعی که هنگام نوشتن این دو Provider پیدا شد
+
+`FaceDetectionArtifact` و `OCRTextArtifact` از قبل فیلد `source_frame_path` را داشتند (برای تطبیق با صحنه، طبق الگویی که پایین‌تر توضیح می‌دهیم). اما وقتی `TransformersObjectDetectionProvider` نوشته شد، مشخص شد که این فیلد را *اعلام* کرده (در `ObjectDetectionArtifact`) اما هیچ‌وقت واقعاً پر نمی‌کرد — همیشه یک رشته‌ی خالی `""` می‌ماند، بدون این‌که هیچ تستی این را بگیرد. `CaptionArtifact` هم اصلاً این فیلد را نداشت. هر دو در همان زمان اصلاح شدند تا با الگوی مشترک هماهنگ باشند. درسش: **داشتن یک فیلد در تعریف کلاس، تضمین نمی‌کند که کد واقعاً آن را پر می‌کند** — این دقیقاً همان چیزی است که تست‌های یکپارچگی (integration test) با داده‌ی واقعی برای گرفتنش لازم‌اند، نه فقط تست واحد با داده‌ی ساختگی.
 
 ## نگاه دقیق به یک Provider واقعی: `FFmpegFrameExtractionProvider`
 
@@ -66,10 +87,15 @@ def run(self, media: Media) -> list[Artifact[Any]]:
     for index, timestamp in enumerate(timestamps):
         frame_path = output_dir / f"{media.id}_frame_{index:04d}.png"
         self._extract_frame(source, timestamp, frame_path)
-        artifacts.append(FrameExtractionArtifact(
-            media_id=media.id, provider=self.name,
-            frame_path=str(frame_path), timestamp_seconds=timestamp, frame_index=index,
-        ))
+        artifacts.append(
+            FrameExtractionArtifact(
+                media_id=media.id,
+                provider=self.name,
+                frame_path=str(frame_path),
+                timestamp_seconds=timestamp,
+                frame_index=index,
+            )
+        )
     return artifacts
 ```
 
@@ -87,14 +113,16 @@ def run(self, media: Media) -> list[Artifact[Any]]:
 try:
     subprocess.run(command, capture_output=True, check=True, timeout=30)
 except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
-    raise ProviderError(f"ffmpeg frame extraction failed at t={timestamp}: {exc}") from exc
+    raise ProviderError(
+        f"ffmpeg frame extraction failed at t={timestamp}: {exc}"
+    ) from exc
 ```
 
 اگر این کار را نکنیم، کسی که از `Pipeline` استفاده می‌کند باید بداند که باید مثلاً `subprocess.CalledProcessError` را هم بگیرد — یعنی باید جزئیات پیاده‌سازی داخلی هر Provider را بداند. با تبدیل هر خطا به `ProviderError`، کافی است فقط یک نوع خطا را بشناسی، مهم نیست پشت‌صحنه از `ffmpeg` استفاده شده یا از یک کتابخانه‌ی پایتونی.
 
 ## نکته‌ی مشترک بین همه: `source_frame_path`
 
-سه‌تا از این پنج Provider (تشخیص چهره، تشخیص متن، و به‌طور غیرمستقیم استخراج قاب) از یک الگوی مشترک استفاده می‌کنند: وقتی روی یک قاب استخراج‌شده اجرا می‌شوند، مسیر فایل آن قاب را در خروجی خودشان نگه می‌دارند. این الگو، پایه‌ی «ترکیب چند حوزه» (cross-domain) در لایه‌ی دانش است که در فایل بعد توضیح می‌دهیم.
+پنج‌تا از این هفت Provider (تشخیص چهره، تشخیص متن، توضیح تصویر، تشخیص شیء، و به‌طور غیرمستقیم استخراج قاب) از یک الگوی مشترک استفاده می‌کنند: وقتی روی یک قاب استخراج‌شده اجرا می‌شوند، مسیر فایل آن قاب را در خروجی خودشان نگه می‌دارند (`source_frame_path`). این الگو، پایه‌ی «ترکیب چند حوزه» (cross-domain) در لایه‌ی دانش است که در فایل بعد توضیح می‌دهیم — و همان‌طور که در بخش بالا دیدی، این الگو آن‌قدر مهم است که نبودِ سرِ‌جایش، یک باگ واقعی محسوب شد.
 
 ---
 

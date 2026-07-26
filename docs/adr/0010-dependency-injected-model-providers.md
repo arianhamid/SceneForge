@@ -45,6 +45,7 @@ it in:
 
 ```python
 from faster_whisper import WhisperModel
+
 provider = WhisperTranscribeProvider(WhisperModel("small", device="cpu"))
 ```
 

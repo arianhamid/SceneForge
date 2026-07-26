@@ -214,8 +214,8 @@ from sceneforge.core.storage import FileArtifactStore
 from sceneforge.knowledge import SceneGroupingBuilder
 
 media = LocalVideoLoader("movie.mp4").load()  # placeholder metadata so far
-enricher = FFprobeEnricher()                   # fills in real duration/codec/fps
-store = FileArtifactStore("./cache")           # analyze once, reuse forever
+enricher = FFprobeEnricher()  # fills in real duration/codec/fps
+store = FileArtifactStore("./cache")  # analyze once, reuse forever
 
 frames = Pipeline(
     provider=FFmpegFrameExtractionProvider(frame_count=12),
@@ -223,7 +223,9 @@ frames = Pipeline(
     store=store,
 ).run_detailed(media)
 
-scenes = Pipeline(provider=PySceneDetectProvider(), enricher=enricher, store=store).run_detailed(media)
+scenes = Pipeline(
+    provider=PySceneDetectProvider(), enricher=enricher, store=store
+).run_detailed(media)
 
 # Knowledge layer: group frames into the scenes they fall within
 entities = SceneGroupingBuilder().build([*frames.artifacts, *scenes.artifacts])

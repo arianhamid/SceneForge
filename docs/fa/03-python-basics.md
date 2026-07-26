@@ -16,16 +16,16 @@ def add(a: int, b: int) -> int:
 نوع‌های پیچیده‌تر که زیاد می‌بینی:
 
 ```python
-names: list[str]              # لیستی از رشته‌ها
-mapping: dict[str, int]       # دیکشنری با کلید رشته و مقدار عدد
-maybe_name: str | None        # یا رشته است، یا None (یعنی «هیچ‌چیز»)
-pair: tuple[int, int]         # یک زوج ثابت از دو عدد
+names: list[str]  # لیستی از رشته‌ها
+mapping: dict[str, int]  # دیکشنری با کلید رشته و مقدار عدد
+maybe_name: str | None  # یا رشته است، یا None (یعنی «هیچ‌چیز»)
+pair: tuple[int, int]  # یک زوج ثابت از دو عدد
 ```
 
 `str | None` را خیلی زیاد می‌بینی — یعنی «این مقدار یا از نوع X است، یا اصلاً وجود ندارد (`None`)». مثلاً در کد واقعی پروژه:
 
 ```python
-source = media.metadata.get("source")   # این می‌تواند str یا None باشد
+source = media.metadata.get("source")  # این می‌تواند str یا None باشد
 if not source:
     raise ProviderError("...")
 ```
@@ -37,6 +37,7 @@ if not source:
 ```python
 from dataclasses import dataclass, field
 from uuid import UUID, uuid4
+
 
 @dataclass(frozen=True, slots=True)
 class FrameExtractionArtifact:
@@ -55,8 +56,8 @@ class FrameExtractionArtifact:
 
 ```python
 artifact = FrameExtractionArtifact(frame_path="/tmp/frame.png", timestamp_seconds=1.5)
-print(artifact.frame_path)   # /tmp/frame.png
-print(artifact.media_id)     # یک UUID تصادفی جدید
+print(artifact.frame_path)  # /tmp/frame.png
+print(artifact.media_id)  # یک UUID تصادفی جدید
 ```
 
 ### چطور یک dataclass غیرقابل‌تغییر را «تغییر» بدهیم؟
@@ -79,6 +80,7 @@ new_artifact = replace(artifact, timestamp_seconds=2.0)
 ```python
 from enum import StrEnum
 
+
 class ArtifactKind(StrEnum):
     FRAME = "frame"
     TRANSCRIPT = "transcript"
@@ -96,6 +98,7 @@ class ArtifactKind(StrEnum):
 ```python
 from abc import ABC, abstractmethod
 
+
 class Provider(ABC):
     @abstractmethod
     def run(self, media): ...
@@ -107,6 +110,7 @@ class Provider(ABC):
 
 ```python
 from typing import Protocol, runtime_checkable
+
 
 @runtime_checkable
 class KnowledgeBuilder(Protocol):
@@ -125,6 +129,7 @@ class KnowledgeBuilder(Protocol):
 from typing import Generic, TypeVar
 
 T = TypeVar("T")
+
 
 class Artifact(Generic[T]):
     payload: T
@@ -150,6 +155,7 @@ class Pipeline:
 ```python
 class SceneForgeError(Exception):
     """پایه‌ی همه‌ی خطاهای پروژه."""
+
 
 class ProviderError(SceneForgeError):
     """وقتی یک Provider نتواند کارش را انجام دهد."""
@@ -192,6 +198,97 @@ with pytest.raises(ProviderError):
 ```
 
 یعنی: «انتظار دارم کد داخل این بلوک، دقیقاً همین خطا را بدهد؛ اگر نداد، خودِ تست شکست بخورد».
+
+## ۱۰. `defaultdict` — دیکشنری که هرگز `KeyError` نمی‌دهد
+
+در کد پروژه (مثلاً `sceneforge/knowledge/scene_grouping_builder.py` و `sceneforge/applications/scene_summary.py`) خیلی زیاد این الگو را می‌بینی: می‌خواهیم چند چیز را بر اساس یک کلید دسته‌بندی کنیم.
+
+```python
+from collections import defaultdict
+from uuid import UUID
+
+facts_by_scene_id: dict[UUID, list[FactData]] = defaultdict(list)
+for scene_id, fact in correlated_facts:
+    facts_by_scene_id[scene_id].append(fact)
+```
+
+با یک `dict` معمولی، خط دوم باید این‌طور می‌بود:
+
+```python
+if scene_id not in facts_by_scene_id:
+    facts_by_scene_id[scene_id] = []
+facts_by_scene_id[scene_id].append(fact)
+```
+
+`defaultdict(list)` یعنی «هر بار که به یک کلیدِ ناموجود دسترسی پیدا کنی، به‌جای خطا، یک لیستِ خالیِ جدید بساز و همان را برگردان». همین یک خط، آن سه خط شرطی را حذف می‌کند.
+
+## ۱۱. `pathlib` — کار با مسیر فایل، به‌جای رشته‌ی خام
+
+پروژه تقریباً هیچ‌جا مسیر فایل را به‌شکل رشته‌ی خام دست‌کاری نمی‌کند (مثلاً با `+` یا `os.path.join`)؛ همیشه از `pathlib.Path` استفاده می‌کند:
+
+```python
+from pathlib import Path
+
+output_dir = Path(cache_dir) / "frames"
+output_dir.mkdir(parents=True, exist_ok=True)
+frame_path = output_dir / f"{media.id}_frame_{index:04d}.png"
+```
+
+فایده‌اش: `/` بین دو `Path` به‌طور خودکار جداکننده‌ی درست سیستم‌عامل را می‌گذارد (روی ویندوز `\`، روی لینوکس/مک `/`) — دیگر لازم نیست خودت نگران این تفاوت باشی. `output_dir.is_file()`، `output_dir.exists()`، و مشابه آن هم خواناتر از توابع جداگانه‌ی ماژول `os.path` هستند.
+
+## ۱۲. الگوهای تست‌نویسی با `pytest`
+
+چون این پروژه به‌شدت روی تست تکیه دارد (نزدیک به ۵۰۰ تست)، فهمیدن چند الگوی تکرارشونده در `tests/` کمک زیادی می‌کند.
+
+### Fixture — آماده‌سازی مشترک بین چند تست
+
+```python
+import pytest
+from pathlib import Path
+
+
+@pytest.fixture
+def video_with_two_scenes(tmp_path: Path) -> Path:
+    path = tmp_path / "two_scenes.mp4"
+    # ... اینجا با ffmpeg واقعی یک ویدیوی واقعی ساخته می‌شود
+    return path
+
+
+def test_scene_detection_finds_two_scenes(video_with_two_scenes):
+    # pytest به‌طور خودکار video_with_two_scenes را می‌سازد و اینجا تزریق می‌کند
+    ...
+```
+
+`tmp_path` خودش یک fixture آماده‌ی خودِ pytest است — یک پوشه‌ی موقتِ تازه برای هر تست، که بعد از تمام‌شدن تست خودکار پاک می‌شود.
+
+### `pytest.importorskip` و `pytest.mark.skipif` — رد شدن صادقانه از کنار وابستگی‌های نصب‌نشده
+
+```python
+pytest.importorskip(
+    "cv2"
+)  # اگر opencv نصب نیست، این تست را «رد شده» علامت بزن، نه «شکست‌خورده»
+
+FFMPEG_AVAILABLE = shutil.which("ffmpeg") is not None
+pytestmark = pytest.mark.skipif(
+    not FFMPEG_AVAILABLE, reason="ffmpeg/ffprobe not on PATH"
+)
+```
+
+فرق مهم: یک تستِ **رد‌شده (skipped)** یعنی «این محیط نمی‌تواند این را چک کند»، اما یک تستِ **شکست‌خورده (failed)** یعنی «چیزی واقعاً خراب است». قاطی‌کردن این دو، اعتماد به کل مجموعه‌ی تست را از بین می‌برد — چون دیگر نمی‌دانی وقتی یک تست قرمز می‌شود، واقعاً یک باگ است یا فقط یک پکیج نصب نیست.
+
+### `pytest.raises` — انتظار داشتن یک خطای مشخص
+
+قبلاً در بخش ۹ دیدی؛ نکته‌ی تکمیلی: همیشه دقیق‌ترین کلاس خطا را چک کن (مثلاً `ProviderError`، نه `Exception` عمومی) — وگرنه تست می‌تواند حتی وقتی کد یک باگ کاملاً نامرتبط دارد، باز هم «سبز» بماند.
+
+## ۱۳. خلاصه: چند بهترین‌شیوه (Best Practice) که در سراسر این پروژه دیده می‌شود
+
+این‌ها قانون‌های نانوشته‌ای هستند که با خواندن کد واقعی پروژه می‌شود استخراجشان کرد — و اگر می‌خواهی به این پروژه کد اضافه کنی، رعایتشان انتظار می‌رود:
+
+1. **هیچ‌وقت `except Exception` بدون دلیل صریح استفاده نکن.** اگر مجبوری (مثلاً برای پیچیدن خطای یک کتابخانه‌ی بیرونی در `ProviderError`)، همیشه یک کامنت `# noqa: BLE001` بگذار که بگوید «این عمدی است، یک خطای دیگر پرتاب می‌شود، قورت داده نمی‌شود» — دقیقاً همان الگویی که در فایل ۶ دیدی.
+2. **مقدار پیش‌فرضِ قابل‌تغییر (mutable default argument) هرگز مستقیم استفاده نمی‌شود.** `def f(items: list = [])` یک باگ کلاسیک پایتون است — همه‌ی فراخوانی‌ها همان یک لیست را به اشتراک می‌گذارند. به‌جایش همیشه `field(default_factory=list)` (در dataclass) یا `items: list | None = None` و ساختن لیست داخل تابع.
+3. **نوع دقیق‌تر همیشه بهتر از `Any` است.** `mypy --strict` روی کل پکیج `sceneforge` اجرا می‌شود؛ استفاده از `Any` جایی که یک نوع دقیق‌تر (مثل `Protocol` یا `TypeVar`) ممکن است، معمولاً در بازبینی کد رد می‌شود.
+4. **تست‌ها واقعی هستند، نه فقط شبیه‌سازی‌شده — هرجا امکانش هست.** همان‌طور که در فایل ۱ دیدی، این پروژه ترجیح می‌دهد یک تست با `ffmpeg` واقعی، یک فایل واقعی، و یک ادعای اندازه‌گیری‌شده‌ی واقعی داشته باشد، تا یک mock که فقط ادعا می‌کند رفتار واقعی را شبیه‌سازی کرده.
+5. **مستندسازی همیشه صادقانه است، حتی درباره‌ی محدودیت‌ها.** docstring های پروژه پر است از جملاتی مثل «هنوز تأیید نشده» یا «عمداً محدود» — به‌جای وانمود کردن که چیزی کامل‌تر از آن‌چیزی است که واقعاً هست.
 
 ---
 

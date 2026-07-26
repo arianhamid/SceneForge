@@ -47,10 +47,10 @@ Ladder is real, narrowly, for the first time.
 
 ## Completed (Sprints 1-14)
 
-- Layers 0-3: six real feature providers across video/audio and image domains
+- Layers 0-3: seven real feature providers across video/audio and image domains
   (`ffmpeg`, `scenedetect`, `whisper`, `opencv`, `tesseract`,
-  `transformers_caption`), plus the dependency-free `MediaHashProvider`
-  utility.
+  `transformers_caption`, `transformers_object_detection`), plus the
+  dependency-free `MediaHashProvider` utility.
 - Layer 4: four Artifact-to-Entity Knowledge Builders
   (`SceneGroupingBuilder`, `SceneFaceBuilder`, `SceneTextBuilder`,
   `FactExtractionBuilder`) and two
@@ -198,6 +198,24 @@ Phase 0 is complete. Start Phase 1:
    is not "needed yet." Building any of them before a real Event/State/
    etc. need appears would repeat the exact mistake this project has
    now avoided nine separate times, just one rung higher.
+9. **Facts organized by scene in `SceneSummary`.** Done —
+   `sceneforge/applications/scene_summary.py`'s `collect()` now
+   correlates a Fact to its `Scene` when the Fact's
+   `metadata["source_frame_path"]` matches a path in some
+   `SCENE` entity's `frame_paths` — the same mechanism
+   `SceneFaceBuilder`/`SceneTextBuilder` established (ADR-0016), reused
+   here rather than duplicated into a new Knowledge/Relationship
+   Builder, since nothing needs the correlation itself to persist as a
+   durable Entity yet. `SceneData` gained a `facts` field; correlated
+   Facts are excluded from the top-level flat `facts` list so a Fact
+   never renders twice. `render_markdown()` shows correlated Facts
+   under their scene ("Facts observed") and leaves uncorrelated ones in
+   the existing flat "Facts" section. Verified against real
+   `ffmpeg`/`scenedetect` output plus a real `FactExtractionBuilder`
+   Fact, not just a hand-built fixture. See
+   `tests/applications/test_scene_summary.py` (5 new tests: match,
+   miss, mixed, markdown rendering, default-empty). This closes the
+   `PROJECT_STATE.md` Future Ideas item on Facts-organized-by-scene.
 
 Provider-neutral artifact contracts and the Runtime decoding-boundary gap are
 explicitly deferred past Phase 0. The first provider for a new capability may
@@ -248,11 +266,10 @@ Phase 0 (ADR-0024) is complete. Start Phase 1:
 The Facts rung of the Understanding Ladder (ADR-0021) is real, with two
 independent real providers (`CAPTION`, `OBJECT_DETECTION`) confirming the
 `FactExtractionBuilder` shape generalizes for artifact count (not for
-statement synthesis, which is per-artifact-type by design). Next: decide,
-based on a real need rather than the roadmap alone, whether Events, a
-Fact-to-scene correlation builder (see `PROJECT_STATE.md`'s Future Ideas),
-or something else is the right next step — see Immediate Tasks item 8
-above.
+statement synthesis, which is per-artifact-type by design). Fact-to-scene
+correlation is now also real in `SceneSummary` (Immediate Tasks item 9).
+Next: decide from a real need rather than the roadmap alone whether Events
+or something else is the right next step — see Immediate Tasks item 8 above.
 
 ---
 
@@ -306,3 +323,12 @@ Phase 1, once Phase 0 above is real:
       honesty about what's still blocked above it — done. The Events
       entry was also corrected: it no longer claims to be "blocked on
       Facts existing first," since Facts now exists.
+- [x] Facts are organized by scene in `SceneSummary` where a
+      correlation is possible, closing the `PROJECT_STATE.md` Future
+      Ideas item on this — done, see
+      `sceneforge/applications/scene_summary.py` and
+      `tests/applications/test_scene_summary.py`. Shipped as read-time
+      correlation over existing `source_frame_path`/`frame_paths`
+      metadata (`SceneFaceBuilder`/`SceneTextBuilder`'s established
+      mechanism, ADR-0016), not a new Builder or persisted type.
+      Verified against real `ffmpeg`/`scenedetect` output.

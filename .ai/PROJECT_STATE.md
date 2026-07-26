@@ -96,11 +96,19 @@ independent real inputs, for the first time.
   `ArtifactCategory` values, and architecture import-rule tests are shipped.
 - `sceneforge.applications.SceneSummary` is the first real application. It reads
   stored scene entities and renders a Markdown scene summary. Also renders
-  `Fact`-kind Entities as their own flat "Facts" section — not correlated to
-  scenes, since nothing yet maps a Fact's source image back to a specific
-  scene (would need a new cross-domain correlation mechanism, deferred until
-  a real need for it appears, same discipline as everything else in this
-  project).
+  `Fact`-kind Entities, now correlated to the `Scene` they belong to where
+  possible: `collect()` matches a Fact's `metadata["source_frame_path"]`
+  against the `frame_paths` already present on `SceneGroupingBuilder`'s
+  `SCENE` entities — the same mechanism `SceneFaceBuilder`/`SceneTextBuilder`
+  established (ADR-0016), applied here as read-time correlation in the
+  Application rather than a new Builder, Protocol, or persisted type, since
+  nothing needs the correlation to be a durable, queryable Entity yet.
+  Verified against real `ffmpeg`/`scenedetect` output plus a real
+  `FactExtractionBuilder`-produced Fact, not just a hand-built fixture. A
+  Fact whose `source_frame_path` doesn't match any known scene's frames
+  stays in the flat "Facts" section, honestly reflecting what could and
+  couldn't be correlated. This closes the former Future Ideas item on
+  Facts-organized-by-scene.
 - The runnable end-to-end example covers real frame extraction and scene
   detection, knowledge construction, relationships, optional face detection
   and OCR, Facts extraction (captioning + object detection) with a
@@ -144,8 +152,11 @@ independent real inputs, for the first time.
   describing the same frame, no confidence thresholding beyond whatever the
   provider's own `threshold` already applied. Deliberately narrow — see its
   module docstring. `source_frame_path` now flows into each Fact's metadata
-  (both artifact types carry it), but no builder correlates it to a
-  specific `Scene` yet.
+  (both artifact types carry it); `sceneforge.applications.SceneSummary`
+  correlates it to a `Scene` at read time (see the Completed entry above) —
+  the builder itself still doesn't, by design, matching how
+  `SceneFaceBuilder`/`SceneTextBuilder` don't produce `RELATIONSHIP`
+  entities either.
 - Fixed while writing this entry: `TransformersObjectDetectionProvider`
   declared `ObjectDetectionArtifact.source_frame_path` but never populated
   it (silently always `""`), and `CaptionArtifact` had no such field at
@@ -235,10 +246,6 @@ closed decisions, not open RFCs (ADRs 0018, 0019, and 0017 respectively).
   appears (ADR-0024's Consequences).
 - Persistence for `AnalysisRun`, `EvidenceAnchor`, and `EvidenceLink` once a
   real multi-provider Application or Fact/Event builder needs to store one.
-- A cross-domain correlation builder mapping `Fact` entities back to the
-  `Scene` they belong to (via `source_frame_path`, matching
-  `SceneFaceBuilder`/`SceneTextBuilder`'s existing pattern, ADR-0016) once
-  a real report needs Facts organized by scene rather than as a flat list.
 
 ## Immediate Goal
 
@@ -253,7 +260,13 @@ explains why those weren't the right fit for a whole-image caption.)
 `sceneforge.applications.SceneSummary` — the project's one real
 Application, whose whole purpose is proving the knowledge layer produces
 something a user can actually see — now renders Facts too, closing the
-loop from provider to visible output for the first time. Keep
+loop from provider to visible output for the first time. `SceneSummary`
+now also correlates Facts to the Scene they belong to (via
+`source_frame_path`/`frame_paths`, the same mechanism
+`SceneFaceBuilder`/`SceneTextBuilder` established), verified against real
+`ffmpeg`/`scenedetect` output — the Future Ideas item this closes. Keep
 Events, State, Intentions, Narrative, and Themes deferred until a real need
 motivates their shape, the same discipline that kept `FactExtractionBuilder`
-narrow rather than speculative.
+narrow rather than speculative. No other Immediate Task is mandated;
+`NEXT_TASK.md`'s remaining Future Ideas/Known Problems entries are options,
+not a queue.

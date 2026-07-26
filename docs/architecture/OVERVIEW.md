@@ -138,7 +138,7 @@ provider, and persists a fresh result after a successful run:
 from sceneforge.core.storage import FileArtifactStore
 
 pipeline = Pipeline(provider=TranscribeProvider(), store=FileArtifactStore("./cache"))
-first = pipeline.run_detailed(media)   # runs the provider
+first = pipeline.run_detailed(media)  # runs the provider
 second = pipeline.run_detailed(media)  # from_cache=True, provider not re-run
 ```
 

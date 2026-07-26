@@ -93,9 +93,9 @@ dict:
 video = VideoMedia(name="movie.mp4", duration=0.0, codec="unknown", fps=0.0)
 enriched = video.evolve(duration=120.0, codec="h264", fps=24.0)
 
-enriched is not video       # True -- new instance
-enriched.id == video.id     # True -- same logical media, corrected facts
-video.duration               # 0.0 -- original is untouched
+enriched is not video  # True -- new instance
+enriched.id == video.id  # True -- same logical media, corrected facts
+video.duration  # 0.0 -- original is untouched
 ```
 
 In practice this is called by a `MediaEnricher`
@@ -129,9 +129,9 @@ The `MediaLoader` protocol defines the contract for loading media objects.
 ```python
 from typing import Protocol
 
+
 class MediaLoader(Protocol):
-    def load(self) -> Media:
-        ...
+    def load(self) -> Media: ...
 ```
 
 Any class with a `load()` method returning `Media` participates.

@@ -108,8 +108,9 @@ exist first to build the next one for real.
 
 **Evidence** — everything directly observable: frame, scene cut,
 transcript segment, detected face, OCR text. *Maps to `Artifact`.
-Real, five providers deep
-(`sceneforge.contrib.ffmpeg/scenedetect/whisper/opencv/tesseract`).*
+Real, seven feature providers deep
+(`sceneforge.contrib.ffmpeg/scenedetect/whisper/opencv/tesseract/
+transformers_caption/transformers_object_detection`).*
 
 **Facts** — evidence converted into objective, higher-level statements
 ("character speaks", "door opens"). *Real, with two independent real
@@ -157,7 +158,8 @@ first.*
 
 **Intentions** — inferred, not extracted ("John wants money"). *Not
 built. Requires an LLM-reasoning step over a populated graph that
-doesn't have Facts or Events yet to reason over.*
+has Facts now, but no Events or persistent cross-scene character/
+location Entities to reason over.*
 
 **Narrative** — story structure (setup, rising action, climax).
 *Not built, same blocker as Intentions.*

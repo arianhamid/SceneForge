@@ -62,13 +62,16 @@ The pattern:
 ```python
 from typing import Protocol, runtime_checkable
 
+
 @runtime_checkable
 class MyModelProtocol(Protocol):
     def infer(self, input_path: str) -> MyModelOutput: ...
 
+
 class MyProvider(Provider):
     def __init__(self, model: MyModelProtocol) -> None:
         self._model = model
+
     # ...
 ```
 

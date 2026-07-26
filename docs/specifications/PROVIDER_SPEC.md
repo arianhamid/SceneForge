@@ -23,6 +23,7 @@ bug, fixed in `docs/adr/0006-provider-protocol-completeness.md`):
 from typing import Protocol
 from sceneforge.core.capability import Capability
 
+
 class Provider(Protocol):
     @property
     def name(self) -> str: ...
@@ -90,10 +91,10 @@ processed:
 
 ```python
 result = pipeline.run_detailed(media)
-result.artifacts        # list[Artifact]
-result.media             # possibly enriched Media
+result.artifacts  # list[Artifact]
+result.media  # possibly enriched Media
 result.duration_seconds  # 0.0 if from_cache
-result.attempts          # 0 if from_cache
+result.attempts  # 0 if from_cache
 result.from_cache
 ```
 
@@ -267,7 +268,9 @@ from sceneforge.core.async_pipeline import AsyncPipeline
 model = WhisperModel("small", device="cpu", compute_type="int8")
 provider = SyncProviderAdapter(WhisperTranscribeProvider(model))
 pipeline = AsyncPipeline(provider, max_concurrency=2, timeout_seconds=300)
-batch = await pipeline.run_many(scene_audio_clips)  # concurrent, bounded, partial-failure-safe
+batch = await pipeline.run_many(
+    scene_audio_clips
+)  # concurrent, bounded, partial-failure-safe
 ```
 
 ### sceneforge.contrib.opencv — algorithmic, bundled weights, no injection needed
@@ -345,7 +348,9 @@ from transformers import pipeline
 from sceneforge.contrib.transformers_caption import TransformersCaptionProvider
 from sceneforge.media.image_loader import LocalImageLoader
 
-pipe = pipeline(task="image-text-to-text", model="Salesforce/blip-image-captioning-base")
+pipe = pipeline(
+    task="image-text-to-text", model="Salesforce/blip-image-captioning-base"
+)
 media = LocalImageLoader("frame.png").load()
 pipeline_ = Pipeline(provider=TransformersCaptionProvider(pipe))
 for caption in pipeline_.run(media):

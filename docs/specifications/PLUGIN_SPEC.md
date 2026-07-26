@@ -45,7 +45,9 @@ installed:
 from sceneforge.plugins.registry import PluginRegistry
 
 registry = PluginRegistry()
-newly_registered = registry.discover()  # finds every installed sceneforge.plugins entry point
+newly_registered = (
+    registry.discover()
+)  # finds every installed sceneforge.plugins entry point
 ```
 
 `discover()` is safe to call more than once — already-registered

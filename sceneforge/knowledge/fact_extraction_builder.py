@@ -46,9 +46,13 @@ real case (or a real consumer) to motivate solving. `source_frame_path`
 now flows into each Fact's metadata (both artifact types carry it,
 matching `FaceDetectionArtifact`/`OCRTextArtifact`'s established
 pattern -- a gap in the two `transformers_*` providers caught while
-writing the end-to-end example), but no builder correlates it to a
-specific `Scene` yet; see `sceneforge.applications.SceneSummary`'s
-module docstring for why that's deferred rather than guessed at.
+writing the end-to-end example). This builder itself still doesn't
+correlate that path to a specific `Scene` --
+`sceneforge.applications.SceneSummary` does that at read time instead
+(see its module docstring), reusing `SceneFaceBuilder`/
+`SceneTextBuilder`'s `source_frame_path`-matching mechanism (ADR-0016)
+at the Application layer rather than duplicating it into a third
+Knowledge Builder.
 
 Does not use the ADR-0024 item-3 evidence contract
 (`EvidenceAnchor`/`EvidenceLink`): `Entity.provenance.source_artifact_ids`

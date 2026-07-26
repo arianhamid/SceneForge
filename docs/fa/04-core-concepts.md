@@ -22,15 +22,17 @@ class Media:
 
 ```python
 from sceneforge.media.video_loader import LocalVideoLoader
+
 media = LocalVideoLoader("movie.mp4").load()
 print(media.duration)  # 0.0  ← این درست نیست!
-print(media.codec)     # "unknown"
+print(media.codec)  # "unknown"
 ```
 
 `LocalVideoLoader` عمداً سبک است — فقط به سیستم فایل نگاه می‌کند، فایل را رمزگشایی نمی‌کند. برای گرفتن مقدار واقعی، باید از یک **Enricher** استفاده کنی:
 
 ```python
 from sceneforge.contrib.ffmpeg import FFprobeEnricher
+
 enriched = FFprobeEnricher().enrich(media)
 print(enriched.duration)  # 120.5  ← حالا درست است
 ```
@@ -60,14 +62,14 @@ class Capability(StrEnum):
 
 ```python
 @dataclass(frozen=True, slots=True)
-class Artifact(ABC, Generic[T]):
+class Artifact[T](ABC):
     id: UUID = field(default_factory=uuid4)
     kind: ArtifactKind = ArtifactKind.ARTIFACT
     category: ArtifactCategory = ArtifactCategory.METADATA
     provider: str = "unknown"
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     payload: T = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: Mapping[str, Any] = field(default_factory=dict)
     parents: tuple[UUID, ...] = ()
 ```
 
@@ -81,7 +83,7 @@ class FrameExtractionArtifact(Artifact[None]):
     timestamp_seconds: float = 0.0
 ```
 
-نکته‌ی خیلی مهم: **`parents`** یک تاپل (tuple) از شناسه‌های Artifact های دیگر است. این فیلد رد پای «این از کجا آمد» را نگه می‌دارد. هیچ Artifact‌ای هرگز حذف نمی‌شود؛ اگر باید اصلاح شود، یک Artifact جدید ساخته می‌شود که در `parents` خودش به Artifact قدیمی اشاره می‌کند.
+نکته‌ی خیلی مهم: **`parents`** یک تاپل (tuple) از شناسه‌های Artifact های دیگر است. این فیلد رد پای «این از کجا آمد» را نگه می‌دارد. خودِ مقدار `Artifact` درجا تغییر نمی‌کند؛ اصلاح باید یک Artifact جدید بسازد که در `parents` به قبلی اشاره کند. اما `ArtifactStore` فعلی یک cache قابل‌حذف است، پس ماندگاری همیشگیِ شاهد فقط از frozen بودن dataclass نتیجه نمی‌شود — همین تفاوت یکی از انگیزه‌های `KnowledgeRecordStore` در ADR-0024 بود.
 
 ## Provider — تولیدکننده‌ی Artifact
 
@@ -131,8 +133,8 @@ pipeline = Pipeline(
 )
 
 result = pipeline.run_detailed(media)
-print(result.artifacts)         # لیست Artifact های ساخته‌شده
-print(result.from_cache)        # آیا از کش خوانده شد؟
+print(result.artifacts)  # لیست Artifact های ساخته‌شده
+print(result.from_cache)  # آیا از کش خوانده شد؟
 print(result.duration_seconds)  # چقدر طول کشید؟
 ```
 
@@ -144,7 +146,9 @@ print(result.duration_seconds)  # چقدر طول کشید؟
 - `store` — چون بدون آن، هربار که یک ویدیو را دوباره پردازش کنی، Provider دوباره (و دوباره، و دوباره) اجرا می‌شود — حتی اگر چیزی تغییر نکرده باشد.
 - `max_retries` — چون بعضی Providerها (مثلاً آن‌هایی که با یک مدل کار می‌کنند) گاهی به‌طور موقت شکست می‌خورند.
 
-### کلید کش چطور ساخته می‌شود؟
+### کلید کش چطور ساخته می‌شود؟ (و باگ واقعی‌ای که در آن پیدا شد)
+
+نسخه‌ی اول این تابع این‌طور بود:
 
 ```python
 def content_key(media, provider_name, provider_version):
@@ -152,7 +156,25 @@ def content_key(media, provider_name, provider_version):
     return sha256(basis.encode()).hexdigest()
 ```
 
-یعنی: اگر همان `media`، همان Provider، و همان نسخه باشد → همان کلید → از کش خوانده می‌شود. اگر نسخه‌ی Provider عوض شود → کلید جدید → دوباره اجرا می‌شود. این دقیقاً چیزی است که باعث می‌شود شعار «یک فیلم فقط یک‌بار تحلیل می‌شود» واقعی باشد، نه فقط یک حرف قشنگ.
+این نسخه یک باگ واقعی داشت که مدت‌ها کشف نشده بود: `media.id` — همان‌طور که در فایل ۳ دیدی — هر بار که یک فایل بارگذاری می‌شود، یک `UUID` **تصادفیِ جدید** می‌گیرد. یعنی اگر همان ویدیو را دو بار بارگذاری می‌کردی (حتی بدون هیچ تغییری در فایل)، دو `media.id` متفاوت می‌گرفتی → دو کلید کش متفاوت → کش هرگز واقعاً «hit» نمی‌شد. مشکل دوم، حتی بدتر: اگر دو Provider با یک نام و نسخه، اما تنظیمات داخلی متفاوت (مثلاً دو مدل Whisper با پارامتر متفاوت) روی همان یک شیء `Media` اجرا می‌شدند، هر دو **همان کلید** را می‌ساختند — یعنی نتیجه‌ی اشتباه از کش برگردانده می‌شد، بدون هیچ خطایی.
+
+یک بررسیِ پیاده‌سازی (implementation review) این باگ را با کد واقعی بازتولید کرد، نه با حدس. راه‌حل (`ADR-0024`) نسخه‌ی فعلی تابع است:
+
+```python
+def content_key(media, provider_name, provider_version, execution_fingerprint=""):
+    basis = (
+        f"{media_content_identity(media)}:{provider_name}:{provider_version}"
+        f":{execution_fingerprint}"
+    )
+    return sha256(basis.encode("utf-8")).hexdigest()
+```
+
+دو تغییر کلیدی:
+
+1. **`media_content_identity(media)` به‌جای `media.id`.** اگر `Media` به یک فایل واقعی روی دیسک اشاره کند، این تابع بایت‌های واقعی فایل را هش می‌کند — یعنی بارگذاری دوباره‌ی همان فایل، همیشه همان هویت را می‌دهد، هرچند `media.id` هر بار عوض شود. اگر `Media` هیچ فایل پشتیبانی نداشته باشد (مثلاً در تست‌ها، رسانه‌ی مصنوعی)، به‌جایش از هش نامِ `media.name` استفاده می‌کند — یک راه‌حل ضعیف‌تر اما مستند و صادقانه، نه پنهان‌شده.
+2. **`execution_fingerprint` جدید.** هر Provider می‌تواند این را override کند تا تنظیمات داخلی‌اش (نه فقط نام و نسخه) هم در کلید کش دخیل باشد. مثلاً `WhisperTranscribeProvider` این را از پارامترهای `transcribe_kwargs` خودش می‌سازد — دقیقاً همان سناریویی که باگ دوم را ایجاد می‌کرد.
+
+درسی که از این باگ می‌شود گرفت: **یک شناسه‌ی «هرباره تصادفی» هرگز نباید پایه‌ی یک کلید کش باشد که قرار است بین دو اجرای مختلف پایدار بماند.** اگر می‌خواهی یک هویت پایدار بسازی، باید از چیزی استفاده کنی که واقعاً از *محتوا* می‌آید، نه از یک شمارنده یا `uuid4()` که هر بار عوض می‌شود.
 
 ## CapabilityRegistry — کدام Media با کدام Capability سازگار است؟
 

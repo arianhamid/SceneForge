@@ -24,9 +24,11 @@
 ```python
 from typing import Protocol, runtime_checkable
 
+
 @runtime_checkable
 class MyModelProtocol(Protocol):
     def infer(self, input_path: str) -> MyModelOutput: ...
+
 
 class MyProvider(Provider):
     def __init__(self, model: MyModelProtocol) -> None:
@@ -43,13 +45,15 @@ class MyProvider(Provider):
 class MyArtifact(Artifact[PayloadType]):
     media_id: UUID = field(default_factory=uuid4)
     kind: ArtifactKind = ArtifactKind.SOMETHING
-    category: ArtifactCategory = ArtifactCategory.ANALYSIS  # یا DETECTION، RECOGNITION، DERIVED
+    category: ArtifactCategory = (
+        ArtifactCategory.ANALYSIS
+    )  # یا DETECTION، RECOGNITION، DERIVED
     provider: str = "my_provider"
 ```
 
 ### قدم ۵: Provider را بنویس
 
-قوانینی که همیشه باید رعایت کنی (همه‌ی پنج Provider واقعی از این پیروی می‌کنند):
+قوانینی که همیشه باید رعایت کنی (همه‌ی هفت Provider قابلیت‌محور از این پیروی می‌کنند):
 
 - اگر نوع `Media` ورودی اشتباه است، بلافاصله `TypeError` بده.
 - هیچ‌وقت خطای یک کتابخانه‌ی بیرونی را مستقیم پرتاب نکن؛ همیشه در `ProviderError` بپیچ (با `from exc`).
@@ -79,13 +83,23 @@ class MyArtifact(Artifact[PayloadType]):
 - اجازه دادن به یک Provider که `Media` ورودی‌اش را تغییر دهد — اگر Provider تو چیزی کشف می‌کند که باید خودِ `Media` را اصلاح کند (نه فقط یک Artifact جدید بسازد)، آن یک `MediaEnricher` است، نه یک `Provider`.
 - نوشتن مستندات درباره‌ی چیزی که هنوز پیاده‌سازی نشده، به‌شکلی که انگار پیاده‌سازی شده.
 
+## چطور یک ارتباط بین دو نوع Entity اضافه کنیم — بدون Builder جدید
+
+یک الگوی دیگر که هنگام وصل‌کردن `Fact` به `Scene` در `SceneSummary` کشف شد، ارزش یک قدم جدا را دارد، چون برعکسِ غریزه‌ی اول عمل می‌کند. غریزه‌ی اول این بود: «باید یک `RelationshipBuilder` جدید بسازیم که Fact ها را به Scene ها وصل کند». اما قبل از نوشتنش، این سؤال پرسیده شد: «آیا الان کسی غیر از یک برنامه‌ی نمایشی به این ارتباط به‌شکل یک Entity ماندگار نیاز دارد؟» جواب نه بود. پس راه‌حل واقعی این شد:
+
+1. داده‌ی لازم (`source_frame_path` روی Fact، `frame_paths` روی Scene) از قبل در `metadata` هرکدام وجود داشت.
+2. تطبیق این دو، در خودِ `SceneSummary.collect()` انجام شد — یک تابع پایتونیِ ساده، نه یک Protocol یا کلاس جدید.
+3. اگر روزی یک مصرف‌کننده‌ی دوم به همین ارتباط نیاز پیدا کند، همان‌وقت — نه زودتر — می‌شود آن را به یک `RelationshipBuilder` واقعی ارتقا داد.
+
+**درسش:** هر ارتباط بین دو Entity لزوماً به یک Entity جدید (`EntityKind.RELATIONSHIP`) نیاز ندارد. اگر فقط *یک* مصرف‌کننده به این ارتباط نیاز دارد و آن ارتباط از داده‌ی موجود، بدون محاسبه‌ی سنگین، قابل‌استخراج است، محاسبه‌اش در لحظه‌ی مصرف (در لایه‌ی Application) — نه ذخیره‌اش به‌عنوان یک Entity جدید — دقیقاً همان چیزی است که اصل «قبل از رسمی‌کردن، اثبات کن» می‌گوید. جزئیات کامل در [`07-knowledge-layer.md`](07-knowledge-layer.md).
+
 ## پیشنهادهایی برای کاری که می‌توانی همین الان شروع کنی
 
-با توجه به وضعیت واقعی پروژه (که در `.ai/NEXT_TASK.md` همیشه به‌روز است)، این‌ها نقاط خوبی برای یادگیری عملی هستند:
+با توجه به وضعیت واقعی پروژه (که در `.ai/NEXT_TASK.md` همیشه به‌روز است)، این‌ها نقاط خوبی برای یادگیری عملی هستند. (نکته: پیشنهادهای قبلیِ این بخش — Provider برای `CAPTION`/`OBJECT_DETECTION` — دیگر این‌جا نیستند چون ساخته شده‌اند؛ به فایل ۶ و ۷ نگاه کن.)
 
-### ۱. یک Provider برای `CAPTION` یا `OBJECT_DETECTION`
+### ۱. تأیید یک Provider مدل‌محور در برابر وزن واقعی
 
-این دقیقاً همان چیزی است که پروژه را به لایه‌ی «حقایق» (Facts) نزدیک می‌کند. یک مدل توضیح‌دهنده‌ی تصویر (Image Captioning VLM) معمولاً وزن‌هایش را باید دانلود کند — پس این فرصت خوبی است تا الگوی «تزریق وابستگی» (قدم ۳ بالا) را با دست خودت تمرین کنی، دقیقاً مثل `WhisperTranscribeProvider`.
+`WhisperTranscribeProvider`، `TransformersCaptionProvider`، و `TransformersObjectDetectionProvider` هرسه فقط با مدل *ساختگی* تست شده‌اند — چون این محیط توسعه به اینترنت/GPU دسترسی ندارد. اگر محیطی داری که این دسترسی را دارد، اجرای یکی از این‌ها با وزن واقعی و نوشتن یک تست یکپارچگیِ واقعی، دقیقاً همان چیزی است که پروژه صادقانه به‌عنوان «هنوز تأیید نشده» علامت زده.
 
 ### ۲. یک Knowledge Builder برای متن روی صفحه
 
@@ -93,11 +107,15 @@ class MyArtifact(Artifact[PayloadType]):
 
 ### ۳. خواندن فایل‌های تست به‌عنوان مستندات زنده
 
-بهترین راه برای یادگیری این‌که یک قطعه‌کد چطور *باید* استفاده شود، خواندن تست‌های واقعی‌اش است. مثلاً `tests/knowledge/test_scene_text_integration.py` نشان می‌دهد چطور یک متن واقعی داخل یک ویدیوی واقعی (با فیلتر `drawtext` در ffmpeg) ساخته می‌شود و بعد با OCR واقعی خوانده می‌شود.
+بهترین راه برای یادگیری این‌که یک قطعه‌کد چطور *باید* استفاده شود، خواندن تست‌های واقعی‌اش است. مثلاً `tests/knowledge/test_scene_text_integration.py` نشان می‌دهد چطور یک متن واقعی داخل یک ویدیوی واقعی (با فیلتر `drawtext` در ffmpeg) ساخته می‌شود و بعد با OCR واقعی خوانده می‌شود. `tests/applications/test_scene_summary.py` هم نمونه‌ی خوبی از تست‌کردن یک تطبیق ساده (Fact به Scene) با fixture های دست‌ساز است.
 
 ### ۴. خواندن سوابق تصمیمات معماری (ADR)
 
-فایل [`10-decision-log.md`](10-decision-log.md) خلاصه‌ی فارسی هر ۲۲ تصمیم را دارد. این بهترین راه برای فهمیدن *چرا* پروژه این‌شکلی است، نه فقط *چه‌شکلی* است.
+فایل [`10-decision-log.md`](10-decision-log.md) خلاصه‌ی فارسی هر ۲۴ تصمیم را دارد. این بهترین راه برای فهمیدن *چرا* پروژه این‌شکلی است، نه فقط *چه‌شکلی* است.
+
+### ۵. یکی از گزینه‌های باز فعلی پروژه
+
+طبق `.ai/PROJECT_STATE.md`، این‌ها گزینه‌های *باز و بدون تصمیم* هستند (نه یک تسک اجباری) — یعنی هرکدام فقط وقتی ساخته می‌شوند که یک نیاز واقعی برایشان پیدا شود: یک CLI (وقتی ترکیب Providerها یک جریان کاری مشخص پیدا کند)، ذخیره‌سازی مبتنی‌بر SQLite یا گراف (اگر یک پرس‌وجوی واقعی از ساختار فعلی جلو بزند)، یک تشخیص‌دهنده‌ی چهره‌ی مبتنی‌بر شبکه‌ی عصبی (اگر دقت Haar Cascade واقعاً کافی نباشد)، یا ماندگاری برای `AnalysisRun`/`EvidenceAnchor`/`EvidenceLink` (وقتی یک Application یا Builder واقعی به ذخیره‌شان نیاز پیدا کند).
 
 ---
 

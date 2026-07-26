@@ -104,7 +104,42 @@ merged = SceneMergeBuilder().relate([*entities, *face_entities])
 
 حالا دو Entity جداگانه داریم که هر دو درباره‌ی «صحنه‌ی ۰» هستند — یکی از `SceneGroupingBuilder` (با دیالوگ)، یکی از `SceneFaceBuilder` (با تعداد چهره). `SceneMergeBuilder` این دو را به یک Entity واحد ترکیب می‌کند، اما داده‌ی هر سازنده را زیر یک کلید جداگانه (به نام همان سازنده) نگه می‌دارد — تا هیچ‌وقت دو سازنده به‌طور تصادفی روی داده‌ی هم ننویسند.
 
-## قدم ۹: اثبات این‌که کش واقعاً کار می‌کند
+## قدم ۹ (اختیاری، نیاز به دانلود مدل و اینترنت دارد): استخراج حقایق (Facts)
+
+```python
+caption_pipeline = Pipeline(
+    provider=TransformersCaptionProvider(pipe),
+    store=store,
+)
+caption_artifacts = []
+for frame_artifact in frame_result.artifacts:
+    frame_media = LocalImageLoader(frame_artifact.frame_path).load()
+    caption_artifacts.extend(caption_pipeline.run(frame_media))
+
+fact_entities = FactExtractionBuilder().build(caption_artifacts)
+```
+
+اینجا همان الگوی قدم ۷ تکرار می‌شود (هر قاب دوباره به‌عنوان یک `ImageMedia` جدید بارگذاری می‌شود)، اما این‌بار خروجی یک `CaptionArtifact` است — مثلاً «یک گربه روی پنجره نشسته». `FactExtractionBuilder` این Artifact خام را به یک `Entity` از نوع `EntityKind.FACT` تبدیل می‌کند؛ این اولین‌جایی در کل مسیر است که پروژه از «مشاهده‌ی خام» (Artifact) به «گزاره‌ی قابل‌فهم» (Fact) رد می‌شود، نه فقط بازآرایی داده‌های خام.
+
+نکته‌ی مهم: `CaptionArtifact` هم — درست مثل `FaceDetectionArtifact` در قدم ۷ — مسیر قاب منبعش را در `source_frame_path` نگه می‌دارد. این یعنی همان الگوی «تطبیق بدون نیاز به `media_id` مشترک» این‌جا هم دوباره کار می‌کند، این‌بار برای وصل‌کردن یک Fact به صحنه‌ای که در آن دیده شده — قدم بعد این را نشان می‌دهد.
+
+## قدم ۱۰: ساختن و خواندن خلاصه‌ی نهایی
+
+```python
+from sceneforge.applications.scene_summary import SceneSummary
+
+summary_store = InMemoryEntityStore()  # یا FileEntityStore
+summary_store.put("scenes", entities)
+summary_store.put("facts", fact_entities)
+
+summary = SceneSummary(summary_store)
+data, markdown = summary.generate()
+print(markdown)
+```
+
+`SceneSummary` همه‌ی Entity های ذخیره‌شده را می‌خواند و یک خروجی Markdown می‌سازد. نکته‌ی جالب همین‌جاست: `collect()` (که `generate()` داخلش صدا می‌زند) یک Fact را به صحنه‌ای که در آن اتفاق افتاده وصل می‌کند — با تطبیق `metadata["source_frame_path"]` روی Fact، در برابر لیست `frame_paths` هر Scene. این دقیقاً همان مکانیزم قدم ۷/۹ است (`source_frame_path`)، اما این‌بار در لایه‌ی برنامه (Application) استفاده شده، نه در یک Knowledge Builder جدید — چون هنوز هیچ نیازی نبود که این ارتباط یک Entity ماندگار و قابل‌جست‌وجو باشد. اگر Fact‌ای به هیچ صحنه‌ای وصل نشود (مثلاً چون از یک قابِ استخراج‌شده نیامده)، در بخش جداگانه‌ی «Facts» نمایش داده می‌شود، نه این‌که بی‌سروصدا حذف شود.
+
+## قدم ۱۱: اثبات این‌که کش واقعاً کار می‌کند
 
 ```python
 second_frames = frame_pipeline.run_detailed(media)
@@ -125,20 +160,20 @@ Media (اطلاعات جایگزین)
 Media (اطلاعات واقعی)
    │  Pipeline با Providerهای مختلف
    ▼
-Artifact ها (قاب، برش صحنه، چهره، متن)
+Artifact ها (قاب، برش صحنه، چهره، متن، توضیح تصویر)
    │  KnowledgeBuilder.build()
    ▼
-Entity ها (یک Entity برای هر صحنه)
+Entity ها (یک Entity برای هر صحنه، یک Entity برای هر Fact)
    │  RelationshipBuilder.relate()
    ▼
 Entity های ترکیبی/رابطه‌ای (ترتیب صحنه‌ها، ادغام چند سازنده)
    │  ذخیره در EntityStore
    ▼
-یک برنامه‌ی واقعی (مثل SceneSummary) این‌ها را می‌خواند
+یک برنامه‌ی واقعی (مثل SceneSummary) این‌ها را می‌خواند و Fact ها را به صحنه‌شان وصل می‌کند
    ▼
 خروجی قابل‌استفاده برای انسان
 ```
 
 ---
 
-مرحله‌ی بعد: [`06-providers-guide.md`](06-providers-guide.md) — حالا بیایید هرکدام از پنج Provider واقعی را از نزدیک ببینیم.
+مرحله‌ی بعد: [`06-providers-guide.md`](06-providers-guide.md) — حالا بیایید هرکدام از هفت Provider قابلیت‌محور را از نزدیک ببینیم.

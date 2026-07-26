@@ -187,6 +187,7 @@ def _make_fact_entity(
     media_id: str | None = None,
     source_provider: str = "transformers_caption",
     prompt: str | None = None,
+    source_frame_path: str = "",
 ) -> Entity[str]:
     """Create a FACT Entity with realistic metadata, matching what
     FactExtractionBuilder actually produces."""
@@ -199,6 +200,7 @@ def _make_fact_entity(
             "statement_type": "caption",
             "source_provider": source_provider,
             "prompt": prompt,
+            "source_frame_path": source_frame_path,
         },
     )
 
@@ -300,6 +302,115 @@ def test_render_markdown_still_reports_no_scenes_found_with_only_facts():
 
 def test_scene_summary_data_default_facts_is_empty_tuple():
     assert SceneSummaryData().facts == ()
+
+
+def test_fact_correlates_to_scene_via_source_frame_path():
+    """A Fact whose source_frame_path matches a scene's frame_paths is
+    attached only to that scene, even when scene indices repeat."""
+    store = InMemoryEntityStore()
+    store.put(
+        "mixed",
+        [
+            _make_scene_entity(
+                scene_index=0,
+                frame_paths=["other_video_frame.png"],
+                payload="other video",
+            ),
+            _make_scene_entity(
+                scene_index=0,
+                frame_paths=["frame_001.png"],
+                payload="matched video",
+            ),
+            _make_fact_entity(
+                "a cat sitting on a windowsill",
+                source_frame_path="frame_001.png",
+            ),
+        ],
+    )
+
+    summary = SceneSummary(store)
+    data = summary.collect()
+
+    assert data.facts == ()
+    scenes_by_dialogue = {scene.dialogue: scene for scene in data.scenes}
+    assert scenes_by_dialogue["other video"].facts == ()
+    matched_facts = scenes_by_dialogue["matched video"].facts
+    assert len(matched_facts) == 1
+    assert matched_facts[0].statement == "a cat sitting on a windowsill"
+    assert matched_facts[0].scene_index == 0
+
+
+def test_fact_with_no_matching_frame_path_stays_uncorrelated():
+    """A Fact whose source_frame_path matches no known scene frame
+    stays in the flat facts list, same as one with no path at all."""
+    store = InMemoryEntityStore()
+    store.put(
+        "mixed",
+        [
+            _make_scene_entity(scene_index=0, frame_paths=["frame_001.png"]),
+            _make_fact_entity("an unrelated fact", source_frame_path="frame_999.png"),
+        ],
+    )
+
+    summary = SceneSummary(store)
+    data = summary.collect()
+
+    assert len(data.facts) == 1
+    assert data.facts[0].statement == "an unrelated fact"
+    assert data.facts[0].scene_index is None
+    assert data.scenes[0].facts == ()
+
+
+def test_facts_split_across_correlated_and_uncorrelated():
+    """A mix of correlated and uncorrelated facts lands in the right
+    place, and correlated facts never also appear in the flat list."""
+    store = InMemoryEntityStore()
+    store.put(
+        "mixed",
+        [
+            _make_scene_entity(scene_index=0, frame_paths=["frame_a.png"]),
+            _make_fact_entity("in scene", source_frame_path="frame_a.png"),
+            _make_fact_entity("not in any scene"),
+        ],
+    )
+
+    summary = SceneSummary(store)
+    data = summary.collect()
+
+    assert [f.statement for f in data.scenes[0].facts] == ["in scene"]
+    assert [f.statement for f in data.facts] == ["not in any scene"]
+
+
+def test_render_markdown_shows_correlated_facts_under_their_scene():
+    store = InMemoryEntityStore()
+    store.put(
+        "mixed",
+        [
+            _make_scene_entity(scene_index=0, frame_paths=["frame_a.png"]),
+            _make_fact_entity(
+                "a dog runs on the beach", source_frame_path="frame_a.png"
+            ),
+        ],
+    )
+
+    summary = SceneSummary(store)
+    markdown = summary.render_markdown()
+
+    assert "## Scene 1" in markdown
+    assert "**Facts observed:**" in markdown
+    assert "a dog runs on the beach" in markdown
+    assert "## Facts" not in markdown
+
+
+def test_scene_data_facts_defaults_to_empty_tuple():
+    scene = _make_scene_entity(scene_index=0)
+    store = InMemoryEntityStore()
+    store.put("scene:0", [scene])
+
+    summary = SceneSummary(store)
+    data = summary.collect()
+
+    assert data.scenes[0].facts == ()
 
 
 def test_scene_summary_renders_object_detection_facts_without_modification():
